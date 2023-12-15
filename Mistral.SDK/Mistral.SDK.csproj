@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+	<LangVersion>8.0</LangVersion>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<Authors>Grant Hamm</Authors>
+	<Product>Mistral API</Product>
+	<Description>A simple C# / .NET library to use with Mistral's API.  Independently developed, this is not an official library and I am not affiliated with Mistral.  A Mistral account is required.</Description>
+	<Copyright>This library is licensed MIT, in the public domain</Copyright>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<PackageProjectUrl>https://github.com/tghamm/Mistral.SDK</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/tghamm/Mistral.SDK</RepositoryUrl>
+	<PackageTags>Mistral, AI, ML, API, C#, .NET</PackageTags>
+	<Title>Mistral API</Title>
+	<PackageReleaseNotes>
+		Initial Release.
+	</PackageReleaseNotes>
+	<PackageId>Mistral.SDK</PackageId>
+	<Version>1.0.0</Version>
+	<AssemblyVersion>1.0.0.0</AssemblyVersion>
+	<FileVersion>1.0.0.0</FileVersion>
+	<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+	<RepositoryType>git</RepositoryType>
+
+	<!-- Optional: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+	<PublishRepositoryUrl>true</PublishRepositoryUrl>
+	<!-- Optional: Build symbol package (.snupkg) to distribute the PDB containing Source Link -->
+	<IncludeSymbols>true</IncludeSymbols>
+	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="System.Text.Json" Version="6.0.7" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+</Project>
