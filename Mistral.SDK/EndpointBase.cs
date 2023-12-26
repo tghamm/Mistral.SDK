@@ -161,31 +161,21 @@ namespace Mistral.SDK
             {
                 if (!string.IsNullOrEmpty(line))
                 {
-                    if (line.StartsWith("event:"))
-                    {
-                        currentEvent.EventType = line.Substring("event:".Length).Trim();
-                    }
-                    else if (line.StartsWith("data:"))
-                    {
-                        currentEvent.Data = line.Substring("data:".Length).Trim();
-                    }
+                    currentEvent.Data = line.Substring("data:".Length).Trim();
                 }
                 else // an empty line indicates the end of an event
                 {
                     if (currentEvent.Data == "[DONE]")
                     {
-                        break;
+                        continue;
                     }
-                    if (currentEvent.EventType == null)
+                    else if (currentEvent.EventType == null)
                     {
                         var res = await JsonSerializer.DeserializeAsync<ChatCompletionResponse>(
                             new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)));
-                        if (!string.IsNullOrWhiteSpace(res.Choices.First().Delta.Content))
-                        {
-                            yield return res;
-                        }
+                        yield return res;
                     }
-                    else if (currentEvent.EventType != "null")
+                    else if (currentEvent.EventType != null)
                     {
                         var res = await JsonSerializer.DeserializeAsync<ErrorResponse>(
                             new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)));
