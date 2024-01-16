@@ -1,6 +1,6 @@
 # Mistral.SDK
 
-[![.NET](https://github.com/tghamm/Mistral.SDK/actions/workflows/dotnet.yml/badge.svg)](https://github.com/tghamm/Mistral.SDK/actions/workflows/dotnet.yml)
+[![.NET](https://github.com/tghamm/Mistral.SDK/actions/workflows/dotnet.yml/badge.svg)](https://github.com/tghamm/Mistral.SDK/actions/workflows/dotnet.yml) [![Nuget](https://img.shields.io/nuget/v/Mistral.SDK)](https://www.nuget.org/packages/Mistral.SDK/)
 
 Mistral.SDK is an unofficial C# client designed for interacting with the Mistral API. This powerful interface simplifies the integration of Mistral AI into your C# applications.  It targets netstandard2.0, and .net6.0.
 
@@ -46,11 +46,28 @@ Here's an example of a non-streaming call to the mistral-medium completions endp
 
 ```csharp
 var client = new MistralClient();
-var request = new ChatCompletionRequest(ModelDefinitions.MistralMedium, new List<ChatMessage>()
+var client = new MistralClient();
+var request = new ChatCompletionRequest(
+    //define model - required
+    ModelDefinitions.MistralMedium,
+    //define messages - required
+    new List<ChatMessage>()
 {
-    new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
-    new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
-});
+    new ChatMessage(ChatMessage.RoleEnum.System, 
+        "You are an expert at writing sonnets."),
+    new ChatMessage(ChatMessage.RoleEnum.User, 
+        "Write me a sonnet about the Statue of Liberty.")
+}, 
+    //optional - defaults to false
+    safePrompt: true, 
+    //optional - defaults to 0.7
+    temperature: 0, 
+    //optional - defaults to null
+    maxTokens: 500, 
+    //optional - defaults to 1
+    topP: 1, 
+    //optional - defaults to null
+    randomSeed: 32);
 var response = await client.Completions.GetCompletionAsync(request);
 Console.WriteLine(response.Choices.First().Message.Content);
 ```
@@ -61,10 +78,14 @@ The following is an example of a streaming call to the mistral-medium completion
 
 ```csharp
 var client = new MistralClient();
-var request = new ChatCompletionRequest(ModelDefinitions.MistralMedium, new List<ChatMessage>()
+var request = new ChatCompletionRequest(
+    ModelDefinitions.MistralMedium, 
+    new List<ChatMessage>()
 {
-    new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
-    new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
+    new ChatMessage(ChatMessage.RoleEnum.System, 
+        "You are an expert at writing sonnets."),
+    new ChatMessage(ChatMessage.RoleEnum.User, 
+        "Write me a sonnet about the Statue of Liberty.")
 });
 var results = new List<ChatCompletionResponse>();
 await foreach (var res in client.Completions.StreamCompletionAsync(request))
@@ -90,7 +111,10 @@ The following is an example of a call to the mistral-embed embeddings model/endp
 
 ```csharp
 var client = new MistralClient();
-var request = new EmbeddingRequest(ModelDefinitions.MistralEmbed, new List<string>() { "Hello world" }, EmbeddingRequest.EncodingFormatEnum.Float);
+var request = new EmbeddingRequest(
+    ModelDefinitions.MistralEmbed, 
+    new List<string>() { "Hello world" }, 
+    EmbeddingRequest.EncodingFormatEnum.Float);
 var response = await client.Embeddings.GetEmbeddingsAsync(request);
 ```
 

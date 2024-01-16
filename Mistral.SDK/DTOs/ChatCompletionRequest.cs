@@ -16,9 +16,9 @@ namespace Mistral.SDK.DTOs
         /// <param name="topP">Nucleus sampling, where the model considers the results of the tokens with &#x60;top_p&#x60; probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.  We generally recommend altering this or &#x60;temperature&#x60; but not both.  (default to 1M).</param>
         /// <param name="maxTokens">The maximum number of tokens to generate in the completion.  The token count of your prompt plus &#x60;max_tokens&#x60; cannot exceed the model&#39;s context length.  .</param>
         /// <param name="stream">Whether to stream back partial progress. If set, tokens will be sent as data-only server-sent events as they become available, with the stream terminated by a data: [DONE] message. Otherwise, the server will hold the request open until the timeout or until completion, with the response containing the full result as JSON.  (default to false).</param>
-        /// <param name="safeMode">Whether to inject a safety prompt before all conversations.  (default to false).</param>
+        /// <param name="safePrompt">Whether to inject a safety prompt before all conversations.  (default to false).</param>
         /// <param name="randomSeed">The seed to use for random sampling. If set, different calls will generate deterministic results. .</param>
-        public ChatCompletionRequest(string model = default(string), List<ChatMessage> messages = default(List<ChatMessage>), decimal? temperature = 0.7M, decimal? topP = 1M, int? maxTokens = default(int?), bool? stream = false, bool safeMode = false, int randomSeed = default(int))
+        public ChatCompletionRequest(string model = default(string), List<ChatMessage> messages = default(List<ChatMessage>), decimal? temperature = 0.7M, decimal? topP = 1M, int? maxTokens = default(int?), bool? stream = false, bool safePrompt = false, int? randomSeed = default(int?))
         {
             // to ensure "model" is required (not null)
             if (model == null)
@@ -39,7 +39,7 @@ namespace Mistral.SDK.DTOs
             this.MaxTokens = maxTokens;
             // use default value if no "stream" provided
             this.Stream = stream ?? false;
-            this.SafeMode = safeMode;
+            this.SafePrompt = safePrompt;
             this.RandomSeed = randomSeed;
         }
         /// <summary>
@@ -93,15 +93,15 @@ namespace Mistral.SDK.DTOs
         /// Whether to inject a safety prompt before all conversations. 
         /// </summary>
         /// <value>Whether to inject a safety prompt before all conversations. </value>
-        [JsonPropertyName("safe_mode")]
-        public bool SafeMode { get; set; }
+        [JsonPropertyName("safe_prompt")]
+        public bool SafePrompt { get; set; }
 
         /// <summary>
         /// The seed to use for random sampling. If set, different calls will generate deterministic results. 
         /// </summary>
         /// <value>The seed to use for random sampling. If set, different calls will generate deterministic results. </value>
         [JsonPropertyName("random_seed")]
-        public int RandomSeed { get; set; }
+        public int? RandomSeed { get; set; }
 
         IEnumerable<ValidationResult> Validate()
         {

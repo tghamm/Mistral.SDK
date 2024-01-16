@@ -11,15 +11,15 @@
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	<PackageProjectUrl>https://github.com/tghamm/Mistral.SDK</PackageProjectUrl>
 	<RepositoryUrl>https://github.com/tghamm/Mistral.SDK</RepositoryUrl>
-	<PackageTags>Mistral, AI, ML, API, C#, .NET</PackageTags>
+	<PackageTags>Mistral, AI, ML, API, C#, .NET, Mixtral</PackageTags>
 	<Title>Mistral API</Title>
 	<PackageReleaseNotes>
-		Bug fix in streaming output.
+		Bug fix in safe_prompt parameter.
 	</PackageReleaseNotes>
 	<PackageId>Mistral.SDK</PackageId>
-	<Version>1.0.1</Version>
-	<AssemblyVersion>1.0.1.0</AssemblyVersion>
-	<FileVersion>1.0.1.0</FileVersion>
+	<Version>1.1.0</Version>
+	<AssemblyVersion>1.1.0.0</AssemblyVersion>
+	<FileVersion>1.1.0.0</FileVersion>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<ProduceReferenceAssembly>True</ProduceReferenceAssembly>

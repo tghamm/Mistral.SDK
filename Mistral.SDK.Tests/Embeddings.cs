@@ -14,7 +14,10 @@ namespace Mistral.SDK.Tests
         public async Task TestMistralEmbeddings()
         {
             var client = new MistralClient();
-            var request = new EmbeddingRequest(ModelDefinitions.MistralEmbed, new List<string>() { "Hello world" }, EmbeddingRequest.EncodingFormatEnum.Float);
+            var request = new EmbeddingRequest(
+                ModelDefinitions.MistralEmbed, 
+                new List<string>() { "Hello world" }, 
+                EmbeddingRequest.EncodingFormatEnum.Float);
             var response = await client.Embeddings.GetEmbeddingsAsync(request);
             Assert.IsNotNull(response);
         }
