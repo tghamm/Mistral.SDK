@@ -14,12 +14,12 @@
 	<PackageTags>Mistral, AI, ML, API, C#, .NET, Mixtral</PackageTags>
 	<Title>Mistral API</Title>
 	<PackageReleaseNotes>
-		Bug fix in safe_prompt parameter.
+		Adopts latest models as defaults in predefined models and updates to include Mistral-Large.
 	</PackageReleaseNotes>
 	<PackageId>Mistral.SDK</PackageId>
-	<Version>1.1.0</Version>
-	<AssemblyVersion>1.1.0.0</AssemblyVersion>
-	<FileVersion>1.1.0.0</FileVersion>
+	<Version>1.2.0</Version>
+	<AssemblyVersion>1.2.0.0</AssemblyVersion>
+	<FileVersion>1.2.0.0</FileVersion>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<ProduceReferenceAssembly>True</ProduceReferenceAssembly>

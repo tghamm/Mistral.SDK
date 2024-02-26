@@ -9,7 +9,43 @@ namespace Mistral.SDK.Tests
     public class Completions
     {
         [TestMethod]
-        public async Task TestMistralCompletion()
+        public async Task TestMistralCompletionModel1()
+        {
+            var client = new MistralClient();
+            var request = new ChatCompletionRequest(ModelDefinitions.OpenMistral7b, new List<ChatMessage>()
+            {
+                new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
+                new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
+            });
+            var response = await client.Completions.GetCompletionAsync(request);
+            
+        }
+        [TestMethod]
+        public async Task TestMistralCompletionModel2()
+        {
+            var client = new MistralClient();
+            var request = new ChatCompletionRequest(ModelDefinitions.OpenMixtral8x7b, new List<ChatMessage>()
+            {
+                new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
+                new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
+            });
+            var response = await client.Completions.GetCompletionAsync(request);
+
+        }
+        [TestMethod]
+        public async Task TestMistralCompletionModel3()
+        {
+            var client = new MistralClient();
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, new List<ChatMessage>()
+            {
+                new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
+                new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
+            });
+            var response = await client.Completions.GetCompletionAsync(request);
+
+        }
+        [TestMethod]
+        public async Task TestMistralCompletionModel4()
         {
             var client = new MistralClient();
             var request = new ChatCompletionRequest(ModelDefinitions.MistralMedium, new List<ChatMessage>()
@@ -18,7 +54,19 @@ namespace Mistral.SDK.Tests
                 new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
             });
             var response = await client.Completions.GetCompletionAsync(request);
-            
+
+        }
+        [TestMethod]
+        public async Task TestMistralCompletionModel5()
+        {
+            var client = new MistralClient();
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralLarge, new List<ChatMessage>()
+            {
+                new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
+                new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
+            });
+            var response = await client.Completions.GetCompletionAsync(request);
+
         }
 
         [TestMethod]
@@ -55,7 +103,7 @@ namespace Mistral.SDK.Tests
         {
             var client = new MistralClient();
             var request = new ChatCompletionRequest(
-                ModelDefinitions.MistralMedium, 
+                ModelDefinitions.MistralLarge, 
                 new List<ChatMessage>()
             {
                 new ChatMessage(ChatMessage.RoleEnum.System, 
