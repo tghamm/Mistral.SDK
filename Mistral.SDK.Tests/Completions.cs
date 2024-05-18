@@ -69,6 +69,51 @@ namespace Mistral.SDK.Tests
 
         }
 
+        public class JsonResult
+        {
+            public string result { get; set; }
+        }
+
+        [TestMethod]
+        public async Task TestMistralCompletionJsonMode()
+        {
+            var client = new MistralClient();
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralLarge, new List<ChatMessage>()
+            {
+                new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing Json."),
+                new ChatMessage(ChatMessage.RoleEnum.User, "Write me a simple 'hello world' statement in a json object with a single 'result' key.")
+            }, responseFormat: new ResponseFormat()
+            {
+                Type = ResponseFormat.ResponseFormatEnum.JSON
+            });
+            var response = await client.Completions.GetCompletionAsync(request);
+            //parse json
+            var result = JsonSerializer.Deserialize<JsonResult>(response.Choices.First().Message.Content);
+            Assert.IsNotNull(result);
+        }
+
+        [TestMethod]
+        public async Task TestMistralCompletionJsonModeStreaming()
+        {
+            var client = new MistralClient();
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralLarge, new List<ChatMessage>()
+            {
+                new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing Json."),
+                new ChatMessage(ChatMessage.RoleEnum.User, "Write me a simple 'hello world' statement in a json object with a single 'result' key.")
+            }, responseFormat: new ResponseFormat()
+            {
+                Type = ResponseFormat.ResponseFormatEnum.JSON
+            });
+            var response = string.Empty;
+            await foreach (var res in client.Completions.StreamCompletionAsync(request))
+            {
+                response += res.Choices.First().Delta.Content;
+            }
+            //parse json
+            var result = JsonSerializer.Deserialize<JsonResult>(response);
+            Assert.IsNotNull(result);
+        }
+
         [TestMethod]
         public async Task TestMistralCompletionSafeWithOptions()
         {
