@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Mistral.SDK.Converters;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -18,7 +19,8 @@ namespace Mistral.SDK.DTOs
         /// <param name="stream">Whether to stream back partial progress. If set, tokens will be sent as data-only server-sent events as they become available, with the stream terminated by a data: [DONE] message. Otherwise, the server will hold the request open until the timeout or until completion, with the response containing the full result as JSON.  (default to false).</param>
         /// <param name="safePrompt">Whether to inject a safety prompt before all conversations.  (default to false).</param>
         /// <param name="randomSeed">The seed to use for random sampling. If set, different calls will generate deterministic results. .</param>
-        public ChatCompletionRequest(string model = default(string), List<ChatMessage> messages = default(List<ChatMessage>), decimal? temperature = 0.7M, decimal? topP = 1M, int? maxTokens = default(int?), bool? stream = false, bool safePrompt = false, int? randomSeed = default(int?))
+        /// <param name="responseFormat">The response format needed If set, the API will be forced to return the data in this mode</param>
+        public ChatCompletionRequest(string model = default(string), List<ChatMessage> messages = default(List<ChatMessage>), decimal? temperature = 0.7M, decimal? topP = 1M, int? maxTokens = default(int?), bool? stream = false, bool safePrompt = false, int? randomSeed = default(int?), ResponseFormat responseFormat = default)
         {
             // to ensure "model" is required (not null)
             if (model == null)
@@ -45,6 +47,7 @@ namespace Mistral.SDK.DTOs
             this.RepeatPenalty = 1.1M;
             this.MinP = .05M;
             
+            this.ResponseFormat = responseFormat;
         }
         /// <summary>
         /// ID of the model to use. You can use the [List Available Models](/api#operation/listModels) API to see all of your available models, or see our [Model overview](/models) for model descriptions. 
@@ -132,7 +135,14 @@ namespace Mistral.SDK.DTOs
         [JsonPropertyName("random_seed")]
         public int? RandomSeed { get; set; }
 
-        IEnumerable<ValidationResult> Validate()
+        /// <summary>
+        /// 
+        /// </summary>
+        [JsonPropertyName("response_format")]
+        public ResponseFormat ResponseFormat { get; set; }  
+
+
+		IEnumerable<ValidationResult> Validate()
         {
             // Temperature (decimal?) maximum
             if (this.Temperature > (decimal?)1)
@@ -166,7 +176,7 @@ namespace Mistral.SDK.DTOs
 
             yield break;
         }
-    }
+	}
 
 
 }

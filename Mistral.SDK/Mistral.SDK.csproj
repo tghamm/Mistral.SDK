@@ -14,12 +14,12 @@
 	<PackageTags>Mistral, AI, ML, API, C#, .NET, Mixtral</PackageTags>
 	<Title>Mistral API</Title>
 	<PackageReleaseNotes>
-		Adopts latest models as defaults in predefined models and updates to include Mistral-Large.
+		Support for JSON Mode.
 	</PackageReleaseNotes>
 	<PackageId>Mistral.SDK</PackageId>
-	<Version>1.2.0</Version>
-	<AssemblyVersion>1.2.0.0</AssemblyVersion>
-	<FileVersion>1.2.0.0</FileVersion>
+	<Version>1.2.1</Version>
+	<AssemblyVersion>1.2.1.0</AssemblyVersion>
+	<FileVersion>1.2.1.0</FileVersion>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<ProduceReferenceAssembly>True</ProduceReferenceAssembly>
