@@ -41,6 +41,10 @@ namespace Mistral.SDK.DTOs
             this.Stream = stream ?? false;
             this.SafePrompt = safePrompt;
             this.RandomSeed = randomSeed;
+            this.TopK = 40;
+            this.RepeatPenalty = 1.1M;
+            this.MinP = .05M;
+            
         }
         /// <summary>
         /// ID of the model to use. You can use the [List Available Models](/api#operation/listModels) API to see all of your available models, or see our [Model overview](/models) for model descriptions. 
@@ -74,6 +78,31 @@ namespace Mistral.SDK.DTOs
         [JsonPropertyName("top_p")]
         public decimal? TopP { get; set; }
 
+        [JsonPropertyName("seed")]
+        public int? Seed { get; set; }
+
+        [JsonPropertyName("top_k")]
+        public int? TopK { get; set; }
+
+        [JsonPropertyName("min_p")]
+        public decimal? MinP { get; set; }
+
+        [JsonPropertyName("repeat_penalty")]
+        public decimal? RepeatPenalty { get; set; }
+
+        [JsonPropertyName("presence_penalty")]
+        public decimal? PresencePenalty { get; set; }
+
+        [JsonPropertyName("frequency_penalty")]
+        public decimal? FrequencyPenalty { get; set; }
+
+        [JsonPropertyName("logit_bias")]
+        public decimal? LogitBias { get; set; }
+        /*
+        frequency_penalty,
+        logit_bias,
+        seed,
+        */
         /// <summary>
         /// The maximum number of tokens to generate in the completion.  The token count of your prompt plus &#x60;max_tokens&#x60; cannot exceed the model&#39;s context length.  
         /// </summary>
