@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
 	<LangVersion>8.0</LangVersion>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	<Authors>Grant Hamm</Authors>
@@ -17,9 +17,9 @@
 		Support for JSON Mode.
 	</PackageReleaseNotes>
 	<PackageId>Mistral.SDK</PackageId>
-	<Version>1.2.1</Version>
-	<AssemblyVersion>1.2.1.0</AssemblyVersion>
-	<FileVersion>1.2.1.0</FileVersion>
+	<Version>1.2.11</Version>
+	<AssemblyVersion>1.2.1.1</AssemblyVersion>
+	<FileVersion>1.2.1.1</FileVersion>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<ProduceReferenceAssembly>True</ProduceReferenceAssembly>
