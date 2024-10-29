@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.AI;
 using Mistral.SDK.DTOs;
 
 namespace Mistral.SDK.Embeddings
 {
-    public class EmbeddingsEndpoint: EndpointBase
+    public class EmbeddingsEndpoint: EndpointBase, IEmbeddingGenerator<string, Embedding<float>>
     {
         /// <summary>
         /// Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of <see cref="MistralClient"/> as <see cref="MistralClient.Embeddings"/>.
@@ -32,5 +35,49 @@ namespace Mistral.SDK.Embeddings
 
             return res;
         }
+
+        async Task<GeneratedEmbeddings<Embedding<float>>> IEmbeddingGenerator<string, Embedding<float>>.GenerateAsync(
+            IEnumerable<string> values, EmbeddingGenerationOptions options, CancellationToken cancellationToken)
+        {
+            var request = new EmbeddingRequest(
+                model: options?.ModelId,
+                input: values.ToList(),
+                encodingFormat: EmbeddingRequest.EncodingFormatEnum.Float);
+
+            var response = await GetEmbeddingsAsync(request).ConfigureAwait(false);
+
+            var now = DateTime.UtcNow;
+            var embeddings = new GeneratedEmbeddings<Embedding<float>>();
+            foreach (var result in response.Data)
+            {
+                embeddings.Add(new Embedding<float>(result.Embedding.Select(d => (float)d).ToArray())
+                {
+                    ModelId = response.Model,
+                    CreatedAt = now,
+                });
+            }
+
+            if (response.Usage is { } usage)
+            {
+                embeddings.Usage = new UsageDetails()
+                {
+                    InputTokenCount = usage.PromptTokens,
+                    OutputTokenCount = usage.CompletionTokens,
+                    TotalTokenCount = usage.TotalTokens,
+                };
+            }
+
+            return embeddings;
+        }
+
+        TService IEmbeddingGenerator<string, Embedding<float>>.GetService<TService>(object key) where TService : class =>
+            this as TService;
+
+        void IDisposable.Dispose() { }
+
+        EmbeddingGeneratorMetadata IEmbeddingGenerator<string, Embedding<float>>.Metadata =>
+            _metadata ??= new EmbeddingGeneratorMetadata(nameof(MistralClient), new Uri(Url));
+
+        private EmbeddingGeneratorMetadata _metadata;
     }
 }
