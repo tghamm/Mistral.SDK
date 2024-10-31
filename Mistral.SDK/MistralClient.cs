@@ -8,7 +8,7 @@ using Mistral.SDK.Models;
 
 namespace Mistral.SDK
 {
-    public class MistralClient
+    public class MistralClient: IDisposable
     {
         public string ApiUrlFormat { get; set; } = "https://api.mistral.ai/{0}/{1}";
 
@@ -23,16 +23,49 @@ namespace Mistral.SDK
         public APIAuthentication Auth { get; set; }
 
         /// <summary>
-        /// Optionally provide an IHttpClientFactory to create the client to send requests.
+        /// Optionally provide a custom HttpClient to send requests.
         /// </summary>
-        public IHttpClientFactory HttpClientFactory { get; set; }
+        internal HttpClient HttpClient { get; set; }
 
-        public MistralClient(APIAuthentication apiKeys = null)
+        /// <summary>
+        /// Creates a new entry point to the Mistral API, handling auth and allowing access to the various API endpoints
+        /// </summary>
+        /// <param name="apiKeys">
+        /// The API authentication information to use for API calls,
+        /// or <see langword="null"/> to attempt to use the <see cref="APIAuthentication.Default"/>,
+        /// potentially loading from environment vars.
+        /// </param>
+        /// <param name="client">A <see cref="HttpClient"/>.</param>
+        /// <remarks>
+        /// <see cref="MistralClient"/> implements <see cref="IDisposable"/> to manage the lifecycle of the resources it uses, including <see cref="HttpClient"/>.
+        /// When you initialize <see cref="MistralClient"/>, it will create an internal <see cref="HttpClient"/> instance if one is not provided.
+        /// This internal HttpClient is disposed of when <see cref="MistralClient"/> is disposed of.
+        /// If you provide an external HttpClient instance to <see cref="MistralClient"/>, you are responsible for managing its disposal.
+        /// </remarks>
+        public MistralClient(APIAuthentication apiKeys = null, HttpClient client = null)
         {
+            HttpClient = SetupClient(client);
             this.Auth = apiKeys.ThisOrDefault();
             Completions = new CompletionsEndpoint(this);
             Models = new ModelsEndpoint(this);
             Embeddings = new EmbeddingsEndpoint(this);
+        }
+
+        private HttpClient SetupClient(HttpClient client)
+        {
+            if (client is not null)
+            {
+                isCustomClient = true;
+                return client;
+            }
+#if NET6_0_OR_GREATER
+            return new HttpClient(new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(15)
+            });
+#else
+            return new HttpClient();
+#endif
         }
 
         /// <summary>
@@ -49,5 +82,35 @@ namespace Mistral.SDK
         /// Gets model embeddings via API.
         /// </summary>
         public EmbeddingsEndpoint Embeddings { get; }
+
+
+        #region IDisposable
+
+        private bool isDisposed;
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (!isDisposed && disposing)
+            {
+                if (!isCustomClient)
+                {
+                    HttpClient?.Dispose();
+                }
+
+                isDisposed = true;
+            }
+        }
+
+        #endregion IDisposable
+
+
+
+        private bool isCustomClient;
     }
 }

@@ -22,6 +22,9 @@ namespace Mistral.SDK
         /// </summary>
         protected readonly MistralClient Client;
 
+        private Lazy<HttpClient> _client;
+
+
         /// <summary>
         /// Constructor of the api endpoint base, to be called from the constructor of any derived classes.
         /// </summary>
@@ -29,6 +32,7 @@ namespace Mistral.SDK
         internal EndpointBase(MistralClient client)
         {
             this.Client = client;
+            _client = new Lazy<HttpClient>(GetClient);
         }
 
         /// <summary>
@@ -41,6 +45,7 @@ namespace Mistral.SDK
         /// </summary>
         protected string Url => string.Format(Client.ApiUrlFormat, Client.ApiVersion, Endpoint);
 
+        private HttpClient InnerClient => _client.Value;
 
         /// <summary>
         /// Gets an HTTPClient with the appropriate authorization and other headers set
@@ -54,13 +59,20 @@ namespace Mistral.SDK
                 throw new AuthenticationException("You must provide API authentication.");
             }
 
-            var clientFactory = Client.HttpClientFactory;
+            var customClient = Client.HttpClient;
 
-            var client = clientFactory != null ? clientFactory.CreateClient() : new HttpClient();
+            var client = customClient ?? new HttpClient();
 
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Client.Auth.ApiKey}");
-            client.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+            if (!client.DefaultRequestHeaders.Contains("Authorization"))
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Client.Auth.ApiKey}");
+            }
 
+            if (!client.DefaultRequestHeaders.Contains("User-Agent"))
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+            }
+            
             return client;
         }
 
@@ -85,11 +97,6 @@ namespace Mistral.SDK
             if (string.IsNullOrEmpty(url))
                 url = this.Url;
 
-            using var client = GetClient();
-
-            client.DefaultRequestHeaders
-                .Accept
-                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
             HttpResponseMessage response = null;
             string resultAsString = null;
             HttpRequestMessage req = new HttpRequestMessage(verb, url);
@@ -108,8 +115,8 @@ namespace Mistral.SDK
                     req.Content = stringContent;
                 }
             }
-
-            response = await client.SendAsync(req,
+            // Ensure innerClient is thread-safe or use a separate instance per thread
+            response = await InnerClient.SendAsync(req,
                 streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead);
 
             if (response.IsSuccessStatusCode)
