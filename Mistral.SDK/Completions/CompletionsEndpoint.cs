@@ -157,7 +157,7 @@ namespace Mistral.SDK.Completions
                 topP: (decimal?)options?.TopP,
                 maxTokens: options?.MaxOutputTokens,
                 safePrompt: options?.AdditionalProperties?.TryGetValue(nameof(ChatCompletionRequest.SafePrompt), out bool safePrompt) is true,
-                randomSeed: options?.AdditionalProperties?.TryGetValue(nameof(ChatCompletionRequest.RandomSeed), out int randomSeed) is true ? (int?)randomSeed : null); 
+                randomSeed: (int?)options?.Seed);
             
             if (options.ResponseFormat is ChatResponseFormatJson)
             {

@@ -76,10 +76,10 @@ namespace Mistral.SDK.Tests
                 ModelId = ModelDefinitions.MistralMedium,
                 Temperature = 0,
                 MaxOutputTokens = 500,
+                Seed = 32,
                 AdditionalProperties = new AdditionalPropertiesDictionary
                 {
                     ["SafePrompt"] = true,
-                    ["RandomSeed"] = 32,
                 },
             });
 
