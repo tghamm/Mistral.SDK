@@ -169,8 +169,8 @@ namespace Mistral.SDK.Completions
 
         void IDisposable.Dispose() { }
 
-        TService IChatClient.GetService<TService>(object key) where TService : class =>
-            this as TService;
+        object IChatClient.GetService(Type serviceType, object key) =>
+            key is null && serviceType?.IsInstanceOfType(this) is true ? this : null;
 
         ChatClientMetadata IChatClient.Metadata => _metadata ??= new ChatClientMetadata(nameof(MistralClient), new Uri(Url));
 

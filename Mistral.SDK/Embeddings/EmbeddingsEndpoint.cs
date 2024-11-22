@@ -70,8 +70,8 @@ namespace Mistral.SDK.Embeddings
             return embeddings;
         }
 
-        TService IEmbeddingGenerator<string, Embedding<float>>.GetService<TService>(object key) where TService : class =>
-            this as TService;
+        object IEmbeddingGenerator<string, Embedding<float>>.GetService(Type serviceType, object key) =>
+            key is null && serviceType?.IsInstanceOfType(this) is true ? this : null;
 
         void IDisposable.Dispose() { }
 
