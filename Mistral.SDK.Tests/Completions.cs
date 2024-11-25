@@ -17,7 +17,7 @@ namespace Mistral.SDK.Tests
                 new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
                 new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
             });
-            var response = await client.Completions.GetCompletionAsync(request);
+            var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
             
         }
         [TestMethod]
@@ -29,7 +29,7 @@ namespace Mistral.SDK.Tests
                 new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
                 new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
             });
-            var response = await client.Completions.GetCompletionAsync(request);
+            var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
         }
         [TestMethod]
@@ -41,7 +41,7 @@ namespace Mistral.SDK.Tests
                 new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
                 new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
             });
-            var response = await client.Completions.GetCompletionAsync(request);
+            var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
         }
         [TestMethod]
@@ -53,7 +53,7 @@ namespace Mistral.SDK.Tests
                 new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
                 new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
             });
-            var response = await client.Completions.GetCompletionAsync(request);
+            var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
         }
         [TestMethod]
@@ -65,7 +65,7 @@ namespace Mistral.SDK.Tests
                 new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
                 new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
             });
-            var response = await client.Completions.GetCompletionAsync(request);
+            var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
         }
 
@@ -86,7 +86,7 @@ namespace Mistral.SDK.Tests
             {
                 Type = ResponseFormat.ResponseFormatEnum.JSON
             });
-            var response = await client.Completions.GetCompletionAsync(request);
+            var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
             //parse json
             var result = JsonSerializer.Deserialize<JsonResult>(response.Choices.First().Message.Content);
             Assert.IsNotNull(result);
@@ -105,7 +105,7 @@ namespace Mistral.SDK.Tests
                 Type = ResponseFormat.ResponseFormatEnum.JSON
             });
             var response = string.Empty;
-            await foreach (var res in client.Completions.StreamCompletionAsync(request))
+            await foreach (var res in client.Completions.StreamCompletionAsync(request).ConfigureAwait(false))
             {
                 response += res.Choices.First().Delta.Content;
             }
@@ -139,7 +139,7 @@ namespace Mistral.SDK.Tests
                 topP: 1, 
                 //optional - defaults to null
                 randomSeed: 32);
-            var response = await client.Completions.GetCompletionAsync(request);
+            var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
         }
 
@@ -157,7 +157,7 @@ namespace Mistral.SDK.Tests
                     "Write me a sonnet about the Statue of Liberty.")
             });
             var results = new List<ChatCompletionResponse>();
-            await foreach (var res in client.Completions.StreamCompletionAsync(request))
+            await foreach (var res in client.Completions.StreamCompletionAsync(request).ConfigureAwait(false))
             {
                 results.Add(res);
                 Debug.Write(res.Choices.First().Delta.Content);
@@ -175,7 +175,7 @@ namespace Mistral.SDK.Tests
                 new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
             }, safePrompt: true);
             var results = new List<ChatCompletionResponse>();
-            await foreach (var res in client.Completions.StreamCompletionAsync(request))
+            await foreach (var res in client.Completions.StreamCompletionAsync(request).ConfigureAwait(false))
             {
                 results.Add(res);
                 Debug.Write(res.Choices.First().Delta.Content);

@@ -24,10 +24,11 @@ namespace Mistral.SDK.Completions
         /// Makes a non-streaming call to the completion API. Be sure to set stream to false in <param name="parameters"></param>.
         /// </summary>
         /// <param name="request"></param>
-        public async Task<ChatCompletionResponse> GetCompletionAsync(ChatCompletionRequest request)
+        /// <param name="cancellationToken"></param>
+        public async Task<ChatCompletionResponse> GetCompletionAsync(ChatCompletionRequest request, CancellationToken cancellationToken = default)
         {
             request.Stream = false;
-            var response = await HttpRequest(Url, HttpMethod.Post, request);
+            var response = await HttpRequest(Url, HttpMethod.Post, request, cancellationToken).ConfigureAwait(false);
             return response;
         }
 
@@ -35,10 +36,11 @@ namespace Mistral.SDK.Completions
         /// Makes a streaming call to the completion API using an IAsyncEnumerable. Be sure to set stream to true in <param name="request"></param>.
         /// </summary>
         /// <param name="request"></param>
-        public async IAsyncEnumerable<ChatCompletionResponse> StreamCompletionAsync(ChatCompletionRequest request)
+        /// <param name="cancellationToken"></param>
+        public async IAsyncEnumerable<ChatCompletionResponse> StreamCompletionAsync(ChatCompletionRequest request, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             request.Stream = true;
-            await foreach (var result in HttpStreamingRequest(Url, HttpMethod.Post, request))
+            await foreach (var result in HttpStreamingRequest(Url, HttpMethod.Post, request, cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 yield return result;
             }
@@ -47,7 +49,7 @@ namespace Mistral.SDK.Completions
         async Task<ChatCompletion> IChatClient.CompleteAsync(
             IList<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options, CancellationToken cancellationToken)
         {
-            var response = await GetCompletionAsync(CreateRequest(chatMessages, options));
+            var response = await GetCompletionAsync(CreateRequest(chatMessages, options), cancellationToken).ConfigureAwait(false);
 
             var completion = new ChatCompletion(new List<Microsoft.Extensions.AI.ChatMessage>())
             {
@@ -93,7 +95,7 @@ namespace Mistral.SDK.Completions
         async IAsyncEnumerable<StreamingChatCompletionUpdate> IChatClient.CompleteStreamingAsync(
             IList<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await foreach (var response in StreamCompletionAsync(CreateRequest(chatMessages, options)))
+            await foreach (var response in StreamCompletionAsync(CreateRequest(chatMessages, options), cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 foreach (var choice in response.Choices)
                 {

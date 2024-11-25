@@ -16,7 +16,7 @@ namespace Mistral.SDK.Tests
             {
                 new(ChatRole.System, "You are an expert at writing sonnets."),
                 new(ChatRole.User, "Write me a sonnet about the Statue of Liberty.")
-            }, new() { ModelId = ModelDefinitions.OpenMistral7b });
+            }, new() { ModelId = ModelDefinitions.OpenMistral7b }).ConfigureAwait(false);
 
             Assert.IsTrue(!string.IsNullOrEmpty(response.Message.Text));
         }
@@ -35,7 +35,7 @@ namespace Mistral.SDK.Tests
             {
                 new(ChatRole.System, "You are an expert at writing Json."),
                 new(ChatRole.User, "Write me a simple 'hello world' statement in a json object with a single 'result' key.")
-            }, new() { ModelId = ModelDefinitions.MistralLarge, ResponseFormat = ChatResponseFormat.Json });
+            }, new() { ModelId = ModelDefinitions.MistralLarge, ResponseFormat = ChatResponseFormat.Json }).ConfigureAwait(false);
 
             Assert.IsTrue(!string.IsNullOrEmpty(response.Message.Text));
 
@@ -53,7 +53,7 @@ namespace Mistral.SDK.Tests
                 {
                     new(ChatRole.System, "You are an expert at writing Json."),
                     new(ChatRole.User, "Write me a simple 'hello world' statement in a json object with a single 'result' key.")
-                }, new() { ModelId = ModelDefinitions.MistralLarge, ResponseFormat = ChatResponseFormat.Json }))
+                }, new() { ModelId = ModelDefinitions.MistralLarge, ResponseFormat = ChatResponseFormat.Json }).ConfigureAwait(false))
             {
                 sb.Append(update);
             }
@@ -81,7 +81,7 @@ namespace Mistral.SDK.Tests
                 {
                     ["SafePrompt"] = true,
                 },
-            });
+            }).ConfigureAwait(false);
 
             Assert.IsTrue(!string.IsNullOrEmpty(response.Message.Text));
         }

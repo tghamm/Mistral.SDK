@@ -14,7 +14,7 @@ namespace Mistral.SDK.Tests
         {
             var client = new MistralClient();
             
-            var response = await client.Models.GetModelsAsync();
+            var response = await client.Models.GetModelsAsync().ConfigureAwait(false);
             Assert.IsNotNull(response);
         }
     }
