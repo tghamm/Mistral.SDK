@@ -36,7 +36,7 @@ namespace Mistral.SDK
             this.Client = client;
             _client = new Lazy<HttpClient>(GetClient);
         }
-
+    
         /// <summary>
         /// The name of the endpoint, which is the final path segment in the API URL.  Must be overriden in a derived class.
         /// </summary>
@@ -86,7 +86,11 @@ namespace Mistral.SDK
         protected async Task<ChatCompletionResponse> HttpRequest(string url = null, HttpMethod verb = null, object postData = null, CancellationToken cancellationToken = default)
         {
             var response = await HttpRequestRaw(url, verb, postData, cancellationToken: cancellationToken).ConfigureAwait(false);
+#if NET6_0_OR_GREATER
+            string resultAsString = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#else
             string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
 
             var res = await JsonSerializer.DeserializeAsync<ChatCompletionResponse>(
                 new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), cancellationToken: cancellationToken)
@@ -131,7 +135,11 @@ namespace Mistral.SDK
             {
                 try
                 {
+#if NET6_0_OR_GREATER
+                    resultAsString = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#else
                     resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
                 }
                 catch (Exception e)
                 {
@@ -164,11 +172,20 @@ namespace Mistral.SDK
             var response = await HttpRequestRaw(url, verb, postData, true, cancellationToken).ConfigureAwait(false);
 
 
+#if NET6_0_OR_GREATER
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+#else
             using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+#endif
             using StreamReader reader = new StreamReader(stream);
             string line;
             SseEvent currentEvent = new SseEvent();
+            
+#if NET8_0_OR_GREATER
+            while ((line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
+#else
             while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+#endif
             {
                 if (!string.IsNullOrEmpty(line))
                 {

@@ -28,7 +28,12 @@ namespace Mistral.SDK.Embeddings
         public async Task<EmbeddingResponse> GetEmbeddingsAsync(EmbeddingRequest request, CancellationToken cancellationToken = default)
         {
             var response = await HttpRequestRaw(Url, HttpMethod.Post, request, cancellationToken: cancellationToken).ConfigureAwait(false);
+            
+#if NET8_0_OR_GREATER
+            string resultAsString = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#else
             string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
 
             var res = await JsonSerializer.DeserializeAsync<EmbeddingResponse>(
                 new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), cancellationToken: cancellationToken)

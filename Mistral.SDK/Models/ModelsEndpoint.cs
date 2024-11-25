@@ -26,7 +26,12 @@ namespace Mistral.SDK.Models
         public async Task<ModelList> GetModelsAsync(CancellationToken cancellationToken = default)
         {
             var response = await HttpRequestRaw(Url, HttpMethod.Get, cancellationToken: cancellationToken).ConfigureAwait(false);
+            
+#if NET8_0_OR_GREATER
+            string resultAsString = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#else
             string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
 
             var res = await JsonSerializer.DeserializeAsync<ModelList>(
                 new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), cancellationToken: cancellationToken)
