@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
+using Mistral.SDK.Converters;
 using Mistral.SDK.DTOs;
 
 namespace Mistral.SDK.Embeddings
@@ -36,7 +37,7 @@ namespace Mistral.SDK.Embeddings
 #endif
 
             var res = await JsonSerializer.DeserializeAsync<EmbeddingResponse>(
-                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), cancellationToken: cancellationToken)
+                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
             return res;

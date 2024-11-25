@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Mistral.SDK.Converters;
 using Mistral.SDK.DTOs;
 
 namespace Mistral.SDK.Tests
