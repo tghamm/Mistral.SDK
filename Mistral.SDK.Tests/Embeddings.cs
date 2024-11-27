@@ -18,7 +18,7 @@ namespace Mistral.SDK.Tests
                 ModelDefinitions.MistralEmbed, 
                 new List<string>() { "Hello world" }, 
                 EmbeddingRequest.EncodingFormatEnum.Float);
-            var response = await client.Embeddings.GetEmbeddingsAsync(request);
+            var response = await client.Embeddings.GetEmbeddingsAsync(request).ConfigureAwait(false);
             Assert.IsNotNull(response);
         }
     }

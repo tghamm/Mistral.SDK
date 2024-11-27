@@ -25,7 +25,7 @@ public class Parallel
                 new ChatMessage(ChatMessage.RoleEnum.System, "You are an expert at writing sonnets."),
                 new ChatMessage(ChatMessage.RoleEnum.User, "Write me a sonnet about the Statue of Liberty.")
             });
-            var response = await client.Completions.GetCompletionAsync(request);
+            var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
         });
 
     }

@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
+using Mistral.SDK.Converters;
 using Mistral.SDK.DTOs;
 
 namespace Mistral.SDK.Embeddings
@@ -25,13 +26,19 @@ namespace Mistral.SDK.Embeddings
         /// <summary>
         /// Makes a POST call to the Embeddings API.
         /// </summary>
-        public async Task<EmbeddingResponse> GetEmbeddingsAsync(EmbeddingRequest request)
+        public async Task<EmbeddingResponse> GetEmbeddingsAsync(EmbeddingRequest request, CancellationToken cancellationToken = default)
         {
-            var response = await HttpRequestRaw(Url, HttpMethod.Post, request);
-            string resultAsString = await response.Content.ReadAsStringAsync();
+            var response = await HttpRequestRaw(Url, HttpMethod.Post, request, cancellationToken: cancellationToken).ConfigureAwait(false);
+            
+#if NET8_0_OR_GREATER
+            string resultAsString = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#else
+            string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
 
             var res = await JsonSerializer.DeserializeAsync<EmbeddingResponse>(
-                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)));
+                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
 
             return res;
         }
@@ -44,7 +51,7 @@ namespace Mistral.SDK.Embeddings
                 input: values.ToList(),
                 encodingFormat: EmbeddingRequest.EncodingFormatEnum.Float);
 
-            var response = await GetEmbeddingsAsync(request).ConfigureAwait(false);
+            var response = await GetEmbeddingsAsync(request, cancellationToken).ConfigureAwait(false);
 
             var now = DateTime.UtcNow;
             var embeddings = new GeneratedEmbeddings<Embedding<float>>();

@@ -4,11 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
+using Mistral.SDK.Converters;
 using Mistral.SDK.DTOs;
 
 namespace Mistral.SDK
@@ -34,7 +37,7 @@ namespace Mistral.SDK
             this.Client = client;
             _client = new Lazy<HttpClient>(GetClient);
         }
-
+    
         /// <summary>
         /// The name of the endpoint, which is the final path segment in the API URL.  Must be overriden in a derived class.
         /// </summary>
@@ -81,18 +84,23 @@ namespace Mistral.SDK
             return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}";
         }
 
-        protected async Task<ChatCompletionResponse> HttpRequest(string url = null, HttpMethod verb = null, object postData = null)
+        protected async Task<ChatCompletionResponse> HttpRequest(string url = null, HttpMethod verb = null, object postData = null, CancellationToken cancellationToken = default)
         {
-            var response = await HttpRequestRaw(url, verb, postData);
-            string resultAsString = await response.Content.ReadAsStringAsync();
+            var response = await HttpRequestRaw(url, verb, postData, cancellationToken: cancellationToken).ConfigureAwait(false);
+#if NET6_0_OR_GREATER
+            string resultAsString = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#else
+            string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
 
             var res = await JsonSerializer.DeserializeAsync<ChatCompletionResponse>(
-                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)));
+                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                .ConfigureAwait(false); 
 
             return res;
         }
 
-        protected async Task<HttpResponseMessage> HttpRequestRaw(string url = null, HttpMethod verb = null, object postData = null, bool streaming = false)
+        protected async Task<HttpResponseMessage> HttpRequestRaw(string url = null, HttpMethod verb = null, object postData = null, bool streaming = false, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(url))
                 url = this.Url;
@@ -109,7 +117,7 @@ namespace Mistral.SDK
                 }
                 else
                 {
-                    string jsonContent = JsonSerializer.Serialize(postData,
+                    string jsonContent = JsonSerializer.Serialize(postData, MistalSdkJsonOption.Options ??
                         new JsonSerializerOptions() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
                     var stringContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                     req.Content = stringContent;
@@ -117,7 +125,8 @@ namespace Mistral.SDK
             }
             // Ensure innerClient is thread-safe or use a separate instance per thread
             response = await InnerClient.SendAsync(req,
-                streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead);
+                streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, cancellationToken)
+                .ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
             {
@@ -127,7 +136,11 @@ namespace Mistral.SDK
             {
                 try
                 {
-                    resultAsString = await response.Content.ReadAsStringAsync();
+#if NET6_0_OR_GREATER
+                    resultAsString = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#else
+                    resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
                 }
                 catch (Exception e)
                 {
@@ -155,16 +168,25 @@ namespace Mistral.SDK
             }
         }
 
-        protected async IAsyncEnumerable<ChatCompletionResponse> HttpStreamingRequest(string url = null, HttpMethod verb = null, object postData = null)
+        protected async IAsyncEnumerable<ChatCompletionResponse> HttpStreamingRequest(string url = null, HttpMethod verb = null, object postData = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var response = await HttpRequestRaw(url, verb, postData, true);
+            var response = await HttpRequestRaw(url, verb, postData, true, cancellationToken).ConfigureAwait(false);
 
 
-            using var stream = await response.Content.ReadAsStreamAsync();
+#if NET6_0_OR_GREATER
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+#endif
             using StreamReader reader = new StreamReader(stream);
             string line;
             SseEvent currentEvent = new SseEvent();
-            while ((line = await reader.ReadLineAsync()) != null)
+            
+#if NET8_0_OR_GREATER
+            while ((line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
+#else
+            while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+#endif
             {
                 if (!string.IsNullOrEmpty(line))
                 {
@@ -179,13 +201,15 @@ namespace Mistral.SDK
                     else if (currentEvent.EventType == null)
                     {
                         var res = await JsonSerializer.DeserializeAsync<ChatCompletionResponse>(
-                            new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)));
+                            new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                            .ConfigureAwait(false);
                         yield return res;
                     }
                     else if (currentEvent.EventType != null)
                     {
                         var res = await JsonSerializer.DeserializeAsync<ErrorResponse>(
-                            new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)));
+                            new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                            .ConfigureAwait(false);
                         throw new Exception(res.Error.Message);
                     }
 

@@ -4,7 +4,9 @@ using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using Mistral.SDK.Converters;
 using Mistral.SDK.DTOs;
 
 namespace Mistral.SDK.Models
@@ -22,13 +24,19 @@ namespace Mistral.SDK.Models
         /// <summary>
         /// Makes a GET call to the Models API.
         /// </summary>
-        public async Task<ModelList> GetModelsAsync()
+        public async Task<ModelList> GetModelsAsync(CancellationToken cancellationToken = default)
         {
-            var response = await HttpRequestRaw(Url, HttpMethod.Get);
-            string resultAsString = await response.Content.ReadAsStringAsync();
+            var response = await HttpRequestRaw(Url, HttpMethod.Get, cancellationToken: cancellationToken).ConfigureAwait(false);
+            
+#if NET8_0_OR_GREATER
+            string resultAsString = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#else
+            string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
 
             var res = await JsonSerializer.DeserializeAsync<ModelList>(
-                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)));
+                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
 
             return res;
         }
