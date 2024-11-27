@@ -14,12 +14,12 @@
 	<PackageTags>Mistral, AI, ML, API, C#, .NET, Mixtral</PackageTags>
 	<Title>Mistral API</Title>
 	<PackageReleaseNotes>
-		Updates IChatClient from Microsoft.Extensions.AI.Abstractions
+		Improves Cancellation Support
 	</PackageReleaseNotes>
 	<PackageId>Mistral.SDK</PackageId>
-	<Version>1.3.2</Version>
-	<AssemblyVersion>1.3.2.0</AssemblyVersion>
-	<FileVersion>1.3.2.0</FileVersion>
+	<Version>1.3.3</Version>
+	<AssemblyVersion>1.3.3.0</AssemblyVersion>
+	<FileVersion>1.3.3.0</FileVersion>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<ProduceReferenceAssembly>True</ProduceReferenceAssembly>
