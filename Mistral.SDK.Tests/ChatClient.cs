@@ -99,7 +99,7 @@ namespace Mistral.SDK.Tests
             {
                 ModelId = "mistral-large-latest",
                 MaxOutputTokens = 512,
-                ToolMode = ChatToolMode.RequireAny,
+                ToolMode = ChatToolMode.Auto,
                 Tools = [AIFunctionFactory.Create((string personName) => personName switch {
                     "Alice" => "25",
                     _ => "40"
@@ -111,6 +111,36 @@ namespace Mistral.SDK.Tests
             Assert.IsTrue(
                 res.Message.Text?.Contains("25") is true,
                 res.Message.Text);
+        }
+
+        [TestMethod]
+        public async Task TestStreamingFunctionCalls()
+        {
+            IChatClient client = new MistralClient().Completions
+                .AsBuilder()
+                .UseFunctionInvocation()
+                .Build();
+
+            ChatOptions options = new()
+            {
+                ModelId = "mistral-large-latest",
+                MaxOutputTokens = 512,
+                ToolMode = ChatToolMode.Auto,
+                Tools = [AIFunctionFactory.Create((string personName) => personName switch {
+                    "Alice" => "25",
+                    _ => "40"
+                }, "GetPersonAge", "Gets the age of the person whose name is specified.")]
+            };
+
+            StringBuilder sb = new();
+            await foreach (var update in client.CompleteStreamingAsync("How old is Alice?", options))
+            {
+                sb.Append(update);
+            }
+
+            Assert.IsTrue(
+                sb.ToString().Contains("25") is true,
+                sb.ToString());
         }
     }
 }

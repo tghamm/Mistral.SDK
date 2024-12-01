@@ -39,41 +39,8 @@ namespace Mistral.SDK.Completions
                 };
             }
 
-            //foreach (Choice choice in response.Choices)
-            //{
-            //    ChatRole role = choice.Message.Role switch
-            //    {
-            //        DTOs.ChatMessage.RoleEnum.System => ChatRole.System,
-            //        DTOs.ChatMessage.RoleEnum.Assistant => ChatRole.User,
-            //        _ => ChatRole.User,
-            //    };
-
-            //    completion.Choices.Add(new Microsoft.Extensions.AI.ChatMessage(role, choice.Message.Content));
-
-            //    if (completion.FinishReason is null && choice.FinishReason != null)
-            //    {
-            //        completion.FinishReason = choice.FinishReason switch
-            //        {
-            //            Choice.FinishReasonEnum.Length => ChatFinishReason.Length,
-            //            Choice.FinishReasonEnum.ModelLength => ChatFinishReason.Length,
-            //            _ => ChatFinishReason.Stop
-            //        };
-            //    }
-            //}
-
             return completion;
         }
-
-        private static UsageDetails CreateUsageDetails(Usage usage) =>
-            new()
-            {
-                InputTokenCount = usage.PromptTokens,
-                OutputTokenCount = usage.CompletionTokens,
-                AdditionalProperties = new()
-                {
-                    [nameof(usage.TotalTokens)] = usage.TotalTokens
-                }
-            };
 
         async IAsyncEnumerable<StreamingChatCompletionUpdate> IChatClient.CompleteStreamingAsync(
             IList<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -82,11 +49,11 @@ namespace Mistral.SDK.Completions
             {
                 foreach (var choice in response.Choices)
                 {
-                    yield return new StreamingChatCompletionUpdate
-                    {
+                    var update = new StreamingChatCompletionUpdate {
                         ChoiceIndex = choice.Index,
                         CompletionId = response.Id,
                         ModelId = response.Model,
+                        RawRepresentation = response,
                         Role = choice.Delta?.Role switch
                         {
                             DTOs.ChatMessage.RoleEnum.System => ChatRole.System,
@@ -100,7 +67,32 @@ namespace Mistral.SDK.Completions
                             _ => ChatFinishReason.Stop
                         },
                         Text = choice.Delta?.Content,
+                        
                     };
+
+                    if (choice.Delta?.ToolCalls is { Count: > 0 })
+                    {
+                        update.Contents = new List<AIContent>
+                        {
+                            new TextContent(choice.Delta.Content)
+                        };
+
+                        foreach (var toolCall in choice.Delta.ToolCalls)
+                        {
+                            Dictionary<string, object> arguments = null;
+                            if (toolCall.Function.Arguments is not null)
+                            {
+                                arguments = JsonSerializer.Deserialize<Dictionary<string, object>>(toolCall.Function.Arguments.ToString());
+                            }
+
+                            update.Contents.Add(new FunctionCallContent(
+                                toolCall.Id,
+                                toolCall.Function.Name,
+                                arguments));
+                        }
+                    }
+
+                    yield return update;
                 }
 
                 if (response.Usage is { } usage)
@@ -133,33 +125,30 @@ namespace Mistral.SDK.Completions
                     m.Role == ChatRole.Tool ? DTOs.ChatMessage.RoleEnum.Tool :
                     DTOs.ChatMessage.RoleEnum.Assistant;
 
-                foreach (var content in m.Contents)
+                foreach (AIContent content in m.Contents)
                 {
-                    if (content is Microsoft.Extensions.AI.FunctionResultContent frc)
+                    switch (content)
                     {
-
-                        return new DTOs.ChatMessage(frc.CallId, frc.Name, frc.Result?.ToString());
-                    }
-                    else if (content is Microsoft.Extensions.AI.FunctionCallContent fcc)
-                    {
-                        return new DTOs.ChatMessage()
-                        {
-                            Role = DTOs.ChatMessage.RoleEnum.Assistant,
-                            ToolCalls = new List<ToolCall>()
+                        case Microsoft.Extensions.AI.FunctionResultContent frc:
+                            return new DTOs.ChatMessage(frc.CallId, frc.Name, frc.Result?.ToString());
+                        case Microsoft.Extensions.AI.FunctionCallContent fcc:
+                            return new DTOs.ChatMessage()
                             {
-                                new ToolCall()
+                                Role = DTOs.ChatMessage.RoleEnum.Assistant,
+                                ToolCalls = new List<ToolCall>()
                                 {
-                                    Id = fcc.CallId,
-                                    Function = new ToolCallParameter()
+                                    new ToolCall()
                                     {
-                                        Arguments = JsonSerializer.SerializeToNode(fcc.Arguments),
-                                        Name = fcc.Name,
+                                        Id = fcc.CallId,
+                                        Function = new ToolCallParameter()
+                                        {
+                                            Arguments = JsonSerializer.SerializeToNode(fcc.Arguments),
+                                            Name = fcc.Name,
+                                        }
                                     }
                                 }
-                            }
-                        };
+                            };
                     }
-                    
                 }
 
                 return new DTOs.ChatMessage(role, string.Concat(m.Contents.OfType<TextContent>()));
@@ -216,8 +205,6 @@ namespace Mistral.SDK.Completions
                         Dictionary<string, object> arguments = null;
                         if (toolCall.Function.Arguments is not null)
                         {
-                            string jsonString = toolCall.Function.Arguments.AsValue().ToJsonString();
-                            jsonString = System.Text.RegularExpressions.Regex.Unescape(jsonString); // Decode Unicode escape sequences
                             arguments = JsonSerializer.Deserialize<Dictionary<string, object>>(toolCall.Function.Arguments.ToString());
                         }
 
