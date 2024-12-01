@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
 using Mistral.SDK.DTOs;
+using ChatMessage = Mistral.SDK.DTOs.ChatMessage;
 
 namespace Mistral.SDK.Completions
 {
@@ -64,6 +65,24 @@ namespace Mistral.SDK.Completions
             request.Stream = true;
             await foreach (var result in HttpStreamingRequest(Url, HttpMethod.Post, request, cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
             {
+                var toolCalls = new List<Common.Function>();
+                foreach (var message in result.Choices)
+                {
+                    if (message.Delta.ToolCalls is null) continue;
+                    foreach (var returned_tool in message.Delta.ToolCalls)
+                    {
+                        var tool = request.Tools?.FirstOrDefault(t => t.Function.Name == returned_tool.Function.Name);
+                        if (tool != null)
+                        {
+                            tool.Function.Arguments = returned_tool.Function.Arguments;
+                            tool.Function.Id = returned_tool.Id;
+                            toolCalls.Add(tool.Function);
+                        }
+                    }
+                }
+
+                result.Choices.First().Delta.Role = ChatMessage.RoleEnum.Assistant;
+                result.ToolCalls = toolCalls;
                 yield return result;
             }
         }

@@ -111,6 +111,58 @@ namespace Mistral.SDK.Tests
             Assert.IsTrue(finalResult.Choices.First().Message.Content.Contains("72"));
         }
 
+        [TestMethod]
+        public async Task TestBasicFunctionStreaming()
+        {
+            var client = new MistralClient();
+            var messages = new List<ChatMessage>()
+            {
+                new ChatMessage(ChatMessage.RoleEnum.User, "How many characters are in the word Christmas, multiply by 5, add 6, subtract 2, then divide by 2.1?")
+            };
+            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+
+            request.ToolChoice = ToolChoiceType.Any;
+
+            request.Tools = new List<Common.Tool>
+            {
+                Common.Tool.FromFunc("ChristmasMathFunction",
+                    ([FunctionParameter("word to start with", true)]string word,
+                        [FunctionParameter("number to multiply word count by", true)]int multiplier,
+                        [FunctionParameter("amount to add to word count", true)]int addition,
+                        [FunctionParameter("amount to subtract from word count", true)]int subtraction,
+                        [FunctionParameter("amount to divide word count by", true)]double divisor) =>
+                    {
+                        return ((word.Length * multiplier + addition - subtraction) / divisor).ToString(CultureInfo.InvariantCulture);
+                    }, "Function that can be used to determine the number of characters in a word combined with a mathematical formula")
+            };
+            var responses = new List<ChatCompletionResponse>();
+            await foreach (var response in client.Completions.StreamCompletionAsync(request))
+            {
+                responses.Add(response);
+            }
+
+            messages.Add(responses.First(p => p.Choices.First().Delta.ToolCalls != null).Choices.First().Delta);
+
+            foreach (var toolCall in responses.First(p => p.Choices.First().Delta.ToolCalls != null).ToolCalls)
+            {
+                var resp = toolCall.Invoke<string>();
+                messages.Add(new ChatMessage(toolCall, resp));
+            }
+
+            request.ToolChoice = ToolChoiceType.none;
+
+            var finalMessage = string.Empty;
+            await foreach (var response in client.Completions.StreamCompletionAsync(request))
+            {
+                finalMessage += response.Choices.First().Delta.Content;
+            }
+            //var finalResult = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
+
+            Assert.IsTrue(finalMessage.Contains("23"));
+        }
+
+
+
 
         [TestMethod]
         public async Task TestBasicFunction()
