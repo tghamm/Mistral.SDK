@@ -9,7 +9,7 @@ public static class MistralSdkJsonOption
 {
 
 #if NET8_0_OR_GREATER
-    public static readonly JsonSerializerOptions Options = JsonContext.Default.Options;
+    public static readonly JsonSerializerOptions Options = null;
 #else
     public static readonly JsonSerializerOptions Options = null;
 #endif
