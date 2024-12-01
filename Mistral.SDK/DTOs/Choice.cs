@@ -24,7 +24,10 @@ namespace Mistral.SDK.DTOs
             /// Enum ModelLength for value: model_length
             /// </summary>
             [JsonPropertyName("model_length")]
-            ModelLength = 3
+            ModelLength = 3,
+
+            [JsonPropertyName("tool_calls")]
+            ToolCalls = 4
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Mime;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,28 @@ namespace Mistral.SDK.Completions
         public async Task<ChatCompletionResponse> GetCompletionAsync(ChatCompletionRequest request, CancellationToken cancellationToken = default)
         {
             request.Stream = false;
+
             var response = await HttpRequest(Url, HttpMethod.Post, request, cancellationToken).ConfigureAwait(false);
+
+            var toolCalls = new List<Common.Function>();
+            foreach (var message in response.Choices)
+            {
+                if (message.Message.ToolCalls is null) continue;
+                foreach (var returned_tool in message.Message.ToolCalls)
+                {
+                    var tool = request.Tools?.FirstOrDefault(t => t.Function.Name == returned_tool.Function.Name);
+                    if (tool != null)
+                    {
+                        tool.Function.Arguments = returned_tool.Function.Arguments;
+                        tool.Function.Id = returned_tool.Id;
+                        toolCalls.Add(tool.Function);
+                    }
+                }
+            }
+            response.ToolCalls = toolCalls;
+
+
+
             return response;
         }
 
