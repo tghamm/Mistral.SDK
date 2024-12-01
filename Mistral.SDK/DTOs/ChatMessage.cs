@@ -25,6 +25,14 @@ namespace Mistral.SDK.DTOs
             this.Content = content;
         }
 
+        public ChatMessage(string toolCallId, string name, string content = default(string))
+        {
+            this.Role = RoleEnum.Tool;
+            this.Name = name;
+            this.ToolCallId = toolCallId;
+            this.Content = content;
+        }
+
         public ChatMessage()
         {
 
