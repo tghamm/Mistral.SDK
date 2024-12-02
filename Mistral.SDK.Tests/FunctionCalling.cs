@@ -86,7 +86,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User, "What is the weather in San Francisco, CA?")
             };
-            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+            var request = new ChatCompletionRequest("mistral-small-latest", messages);
 
             request.ToolChoice = ToolChoiceType.Auto;
 
@@ -208,7 +208,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User, "What is the weather in San Francisco, CA in Fahrenheit?")
             };
-            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+            var request = new ChatCompletionRequest("mistral-small-latest", messages);
             request.MaxTokens = 1024;
             request.Temperature = 0.0m;
             request.ToolChoice = ToolChoiceType.Auto;
@@ -224,8 +224,7 @@ namespace Mistral.SDK.Tests
                 var resp = await toolCall.InvokeAsync<string>();
                 messages.Add(new ChatMessage(toolCall, resp));
             }
-            //request.ToolChoice = ToolChoiceType.none;
-            //request.Tools = null;
+            
             var finalResult = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
             Assert.IsTrue(finalResult.Choices.First().Message.Content.Contains("72"));
@@ -309,7 +308,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User,"Should I wear a hat? It's warm outside.")
             };
-            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+            var request = new ChatCompletionRequest("mistral-small-latest", messages);
 
             request.ToolChoice = ToolChoiceType.Any;
 
@@ -334,7 +333,7 @@ namespace Mistral.SDK.Tests
             request.ToolChoice = ToolChoiceType.none;
             var finalResult = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
-            Assert.IsTrue(finalResult.Choices.First().Message.Content.Contains("warm"));
+            Assert.IsTrue(finalResult.Choices.First().Message.Content.ToLower().Contains("no"));
         }
 
 

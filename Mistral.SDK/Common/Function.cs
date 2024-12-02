@@ -434,7 +434,7 @@ namespace Mistral.SDK.Common
                     }
                     else if (value is JsonElement element)
                     {
-                        invokeArgs[i] = JsonSerializer.Deserialize(element.GetRawText(), parameter.ParameterType);
+                        invokeArgs[i] = JsonSerializer.Deserialize(element.GetRawText(), parameter.ParameterType, MistralClient.JsonSerializationOptions);
                     }
                     else
                     {

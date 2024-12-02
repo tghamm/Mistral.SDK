@@ -123,7 +123,7 @@ namespace Mistral.SDK.Extensions
 
                 foreach (var value in Enum.GetValues(type))
                 {
-                    schema["enum"].AsArray().Add(JsonNode.Parse(JsonSerializer.Serialize(value)));
+                    schema["enum"].AsArray().Add(JsonNode.Parse(JsonSerializer.Serialize(value, MistralClient.JsonSerializationOptions)));
                 }
             }
             else if (type.IsArray || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)))
@@ -190,7 +190,7 @@ namespace Mistral.SDK.Extensions
 
                         if (functionPropertyAttribute.DefaultValue != null)
                         {
-                            defaultValue = JsonNode.Parse(JsonSerializer.Serialize(functionPropertyAttribute.DefaultValue));
+                            defaultValue = JsonNode.Parse(JsonSerializer.Serialize(functionPropertyAttribute.DefaultValue, MistralClient.JsonSerializationOptions));
                             propertyInfo["default"] = defaultValue;
                         }
 
@@ -200,7 +200,7 @@ namespace Mistral.SDK.Extensions
 
                             foreach (var value in functionPropertyAttribute.PossibleValues)
                             {
-                                var @enum = JsonNode.Parse(JsonSerializer.Serialize(value));
+                                var @enum = JsonNode.Parse(JsonSerializer.Serialize(value, MistralClient.JsonSerializationOptions));
 
                                 if (defaultValue == null)
                                 {
@@ -217,7 +217,7 @@ namespace Mistral.SDK.Extensions
 
                             if (defaultValue != null && !enums.Contains(defaultValue))
                             {
-                                enums.Add(JsonNode.Parse(defaultValue.ToJsonString()));
+                                enums.Add(JsonNode.Parse(defaultValue.ToJsonString(MistralClient.JsonSerializationOptions)));
                             }
 
                             propertyInfo["enum"] = enums;

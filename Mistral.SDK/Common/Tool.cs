@@ -168,6 +168,24 @@ namespace Mistral.SDK.Common
             return false;
         }
 
+        private static IEnumerable<Type> GetAssemblyTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                // Return the types that could be loaded
+                return ex.Types.Where(t => t != null);
+            }
+            catch
+            {
+                // Return an empty sequence if any other exception occurs
+                return Enumerable.Empty<Type>();
+            }
+        }
+
         /// <summary>
         /// Gets a list of all available tools.
         /// </summary>
@@ -190,7 +208,7 @@ namespace Mistral.SDK.Common
                 var tools = new List<Tool>();
                 tools.AddRange(
                     from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                    from type in assembly.GetTypes()
+                    from type in GetAssemblyTypes(assembly)
                     from method in type.GetMethods()
                     where method.IsStatic
                     let functionAttribute = method.GetCustomAttribute<FunctionAttribute>()
