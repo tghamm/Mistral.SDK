@@ -16,6 +16,7 @@ Mistral.SDK is an unofficial C# client designed for interacting with the Mistral
   - [IChatClient](#ichatclient)
   - [List Models](#list-models)
   - [Embeddings](#embeddings)
+  - [Function Calling](#function-calling)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -37,7 +38,7 @@ The `MistralClient` can optionally take a custom `HttpClient` in the `MistralCli
 
 ## Usage
 
-There are two ways to start using the `MistralClient`.  The first is to simply new up an instance of the `MistralClient` and start using it, the second is to use the messaging/Embedding client with the new `Microsoft.Extensions.AI.Abstractions` builder.
+There are three ways to start using the `MistralClient`.  The first is to simply new up an instance of the `MistralClient` and start using it, the second is to use the messaging/Embedding client with the new `Microsoft.Extensions.AI.Abstractions` builder.  The third is to use the Completions client with `Microsoft.SemanticKernel`.
 Brief examples of each are below.
 
 Option 1:
@@ -56,7 +57,25 @@ IChatClient client = new MistralClient().Completions;
 IEmbeddingGenerator<string, Embedding<float>> client = new MistralClient().Embeddings;
 ```
 
-Both support all the core features of the `MistralClient's` Messaging and Embedding capabilities, but the latter will be fully featured in .NET 9 and provide built in telemetry and DI and make it easier to choose which SDK you are using.
+Option 3:
+
+```csharp
+using Microsoft.SemanticKernel;
+
+var skChatService =
+    new ChatClientBuilder(new MistralClient().Completions)
+        .UseFunctionInvocation()
+        .Build()
+        .AsChatCompletionService();
+
+
+var sk = Kernel.CreateBuilder();
+sk.Plugins.AddFromType<SkPlugins>("Weather");
+sk.Services.AddSingleton<IChatCompletionService>(skChatService);
+```
+See integration tests for a more complete example.
+
+All support all the core features of the `MistralClient's` Messaging and Embedding capabilities, but the latter will be fully featured in .NET 9 and provide built in telemetry and DI and make it easier to choose which SDK you are using.
 
 ## Examples
 
@@ -150,8 +169,31 @@ EmbeddingGenerator<string, Embedding<float>> client = new MistralClient().Embedd
             var response = await client.GenerateEmbeddingVectorAsync("hello world", new() { ModelId = ModelDefinitions.MistralEmbed });
             Assert.IsTrue(!response.IsEmpty);
 
+//Functions call
+IChatClient client = new MistralClient().Completions
+    .AsBuilder()
+    .UseFunctionInvocation()
+    .Build();
+
+ChatOptions options = new()
+{
+    ModelId = ModelDefinitions.MistralSmall,
+    MaxOutputTokens = 512,
+    ToolMode = ChatToolMode.Auto,
+    Tools = [AIFunctionFactory.Create((string personName) => personName switch {
+        "Alice" => "25",
+        _ => "40"
+    }, "GetPersonAge", "Gets the age of the person whose name is specified.")]
+};
+
+var res = await client.CompleteAsync("How old is Alice?", options);
+
+Assert.IsTrue(
+    res.Message.Text?.Contains("25") is true,
+    res.Message.Text);
+
 ```
-Please see the unit tests for even more examples.
+Please see the integration tests for even more examples.
 
 ### List Models
 
@@ -176,9 +218,96 @@ var request = new EmbeddingRequest(
 var response = await client.Embeddings.GetEmbeddingsAsync(request);
 ```
 
+### Function Calling
+
+The `MistralClient` supports Function Calling through a variety of mechanisms. It's worth noting that currently some models seem to hallucinate function calling behavior more than others, and this is a known issue with Mistral.
+
+```csharp
+public enum TempType
+{
+    Fahrenheit,
+    Celsius
+}
+
+[Function("This function returns the weather for a given location")]
+public static async Task<string> GetWeather([FunctionParameter("Location of the weather", true)] string location,
+    [FunctionParameter("Unit of temperature, celsius or fahrenheit", true)] TempType tempType)
+{
+    await Task.Yield();
+    return "72 degrees and sunny";
+}
+
+//declared globally
+var client = new MistralClient();
+var messages = new List<ChatMessage>()
+{
+    new ChatMessage(ChatMessage.RoleEnum.User, "What is the weather in San Francisco, CA in Fahrenheit?")
+};
+var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
+request.MaxTokens = 1024;
+request.Temperature = 0.0m;
+request.ToolChoice = ToolChoiceType.Auto;
+
+request.Tools = Common.Tool.GetAllAvailableTools(includeDefaults: false, forceUpdate: true, clearCache: true).ToList();
+
+var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
+
+messages.Add(response.Choices.First().Message);
+
+foreach (var toolCall in response.ToolCalls)
+{
+    var resp = await toolCall.InvokeAsync<string>();
+    messages.Add(new ChatMessage(toolCall, resp));
+}
+
+var finalResult = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
+
+Assert.IsTrue(finalResult.Choices.First().Message.Content.Contains("72"));
+
+//from a func
+var client = new MistralClient();
+var messages = new List<ChatMessage>()
+{
+    new ChatMessage(ChatMessage.RoleEnum.User,"How many characters are in the word Christmas, multiply by 5, add 6, subtract 2, then divide by 2.1?")
+};
+var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
+
+request.ToolChoice = ToolChoiceType.Auto;
+
+request.Tools = new List<Common.Tool>
+{
+    Common.Tool.FromFunc("ChristmasMathFunction",
+        ([FunctionParameter("word to start with", true)]string word,
+            [FunctionParameter("number to multiply word count by", true)]int multiplier,
+            [FunctionParameter("amount to add to word count", true)]int addition,
+            [FunctionParameter("amount to subtract from word count", true)]int subtraction,
+            [FunctionParameter("amount to divide word count by", true)]double divisor) =>
+        {
+            return ((word.Length * multiplier + addition - subtraction) / divisor).ToString(CultureInfo.InvariantCulture);
+        }, "Function that can be used to determine the number of characters in a word combined with a mathematical formula")
+};
+
+var response = await client.Completions.GetCompletionAsync(request);
+
+messages.Add(response.Choices.First().Message);
+
+foreach (var toolCall in response.ToolCalls)
+{
+    var resp = toolCall.Invoke<string>();
+    messages.Add(new ChatMessage(toolCall, resp));
+}
+
+var finalResult = await client.Completions.GetCompletionAsync(request);
+
+Assert.IsTrue(finalResult.Choices.First().Message.Content.Contains("23"));
+
+//see integration tests for examples like streaming function calls, calling a static or instance based function, and more.
+
+```
+
 ## Contributing
 
-Pull requests are welcome. If you're planning to make a major change, please open an issue first to discuss your proposed changes.
+Pull requests are welcome with associated integration tests. If you're planning to make a major change, please open an issue first to discuss your proposed changes.
 
 ## License
 

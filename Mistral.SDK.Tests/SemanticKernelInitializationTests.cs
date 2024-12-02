@@ -37,7 +37,7 @@ namespace Mistral.SDK.Tests
             OpenAIPromptExecutionSettings promptExecutionSettings = new()
             {
                 FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
-                ModelId = "mistral-small-latest",
+                ModelId = ModelDefinitions.MistralSmall,
                 MaxTokens = 1024,
                 Temperature = 0.0,
             };

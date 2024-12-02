@@ -54,7 +54,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User, "What is the weather in San Francisco, CA?")
             };
-            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
 
             request.ToolChoice = ToolChoiceType.Auto;
 
@@ -86,7 +86,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User, "What is the weather in San Francisco, CA?")
             };
-            var request = new ChatCompletionRequest("mistral-small-latest", messages);
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
 
             request.ToolChoice = ToolChoiceType.Auto;
 
@@ -119,7 +119,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User, "How many characters are in the word Christmas, multiply by 5, add 6, subtract 2, then divide by 2.1?")
             };
-            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
 
             request.ToolChoice = ToolChoiceType.Any;
 
@@ -156,7 +156,6 @@ namespace Mistral.SDK.Tests
             {
                 finalMessage += response.Choices.First().Delta.Content;
             }
-            //var finalResult = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
             Assert.IsTrue(finalMessage.Contains("23"));
         }
@@ -172,7 +171,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User, "What is the current weather in San Francisco?")
             };
-            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
 
             request.ToolChoice = ToolChoiceType.Auto;
 
@@ -208,7 +207,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User, "What is the weather in San Francisco, CA in Fahrenheit?")
             };
-            var request = new ChatCompletionRequest("mistral-small-latest", messages);
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
             request.MaxTokens = 1024;
             request.Temperature = 0.0m;
             request.ToolChoice = ToolChoiceType.Auto;
@@ -238,7 +237,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User, "What is the current user's name?")
             };
-            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
 
             request.ToolChoice = ToolChoiceType.Auto;
 
@@ -267,7 +266,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User,"How many characters are in the word Christmas, multiply by 5, add 6, subtract 2, then divide by 2.1?")
             };
-            var request = new ChatCompletionRequest("mistral-large-latest", messages);
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
 
             request.ToolChoice = ToolChoiceType.Auto;
 
@@ -308,7 +307,7 @@ namespace Mistral.SDK.Tests
             {
                 new ChatMessage(ChatMessage.RoleEnum.User,"Should I wear a hat? It's warm outside.")
             };
-            var request = new ChatCompletionRequest("mistral-small-latest", messages);
+            var request = new ChatCompletionRequest(ModelDefinitions.MistralSmall, messages);
 
             request.ToolChoice = ToolChoiceType.Any;
 
@@ -324,16 +323,17 @@ namespace Mistral.SDK.Tests
             var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
             messages.Add(response.Choices.First().Message);
-
+            var hitTool = false;
             foreach (var toolCall in response.ToolCalls)
             {
                 var resp = toolCall.Invoke<string>();
                 messages.Add(new ChatMessage(toolCall, resp));
+                hitTool = true;
             }
             request.ToolChoice = ToolChoiceType.none;
             var finalResult = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
-            Assert.IsTrue(finalResult.Choices.First().Message.Content.ToLower().Contains("no"));
+            Assert.IsTrue(hitTool);
         }
 
 

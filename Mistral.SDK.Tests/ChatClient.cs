@@ -97,7 +97,7 @@ namespace Mistral.SDK.Tests
 
             ChatOptions options = new()
             {
-                ModelId = "mistral-large-latest",
+                ModelId = ModelDefinitions.MistralSmall,
                 MaxOutputTokens = 512,
                 ToolMode = ChatToolMode.Auto,
                 Tools = [AIFunctionFactory.Create((string personName) => personName switch {
@@ -123,7 +123,7 @@ namespace Mistral.SDK.Tests
 
             ChatOptions options = new()
             {
-                ModelId = "mistral-large-latest",
+                ModelId = ModelDefinitions.MistralSmall,
                 MaxOutputTokens = 512,
                 ToolMode = ChatToolMode.Auto,
                 Tools = [AIFunctionFactory.Create((string personName) => personName switch {
