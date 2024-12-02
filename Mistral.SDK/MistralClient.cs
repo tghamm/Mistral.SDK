@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 using Mistral.SDK.Completions;
 using Mistral.SDK.Embeddings;
 using Mistral.SDK.Models;
@@ -50,6 +52,13 @@ namespace Mistral.SDK
             Models = new ModelsEndpoint(this);
             Embeddings = new EmbeddingsEndpoint(this);
         }
+
+        internal static JsonSerializerOptions JsonSerializationOptions { get; } = new()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Converters = { new JsonStringEnumConverter() },
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+        };
 
         private HttpClient SetupClient(HttpClient client)
         {

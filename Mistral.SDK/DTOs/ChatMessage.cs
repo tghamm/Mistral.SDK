@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Mistral.SDK.Converters;
 
 namespace Mistral.SDK.DTOs
@@ -15,6 +16,28 @@ namespace Mistral.SDK.DTOs
             this.Role = role;
             this.Content = content;
         }
+
+        public ChatMessage(Common.Function? toolCall, string content = default(string))
+        {
+            this.Role = RoleEnum.Tool;
+            this.Name = toolCall.Name;
+            this.ToolCallId = toolCall.Id;
+            this.Content = content;
+        }
+
+        public ChatMessage(string toolCallId, string name, string content = default(string))
+        {
+            this.Role = RoleEnum.Tool;
+            this.Name = name;
+            this.ToolCallId = toolCallId;
+            this.Content = content;
+        }
+
+        public ChatMessage()
+        {
+
+        }
+
 
         [JsonConverter(typeof(JsonPropertyNameEnumConverter<RoleEnum>))]
         public enum RoleEnum
@@ -38,7 +61,10 @@ namespace Mistral.SDK.DTOs
             /// </summary>
             [JsonPropertyName("assistant")]
             //[EnumMember(Value = "assistant")]
-            Assistant = 3
+            Assistant = 3,
+
+            [JsonPropertyName("tool")]
+            Tool = 4
         }
 
         /// <summary>
@@ -47,12 +73,18 @@ namespace Mistral.SDK.DTOs
         [JsonPropertyName("role")]
         public RoleEnum? Role { get; set; }
 
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
         /// <summary>
         /// Gets or Sets Content
         /// </summary>
         [JsonPropertyName("content")]
         public string Content { get; set; }
 
+        [JsonPropertyName("tool_calls")]
+        public List<ToolCall> ToolCalls { get; set; }
 
+        [JsonPropertyName("tool_call_id")]
+        public string ToolCallId { get; set; }
     }
 }

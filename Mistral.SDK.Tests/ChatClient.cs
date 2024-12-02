@@ -86,5 +86,61 @@ namespace Mistral.SDK.Tests
 
             Assert.IsTrue(!string.IsNullOrEmpty(response.Message.Text));
         }
+
+        [TestMethod]
+        public async Task TestNonStreamingFunctionCalls()
+        {
+            IChatClient client = new MistralClient().Completions
+                .AsBuilder()
+                .UseFunctionInvocation()
+                .Build();
+
+            ChatOptions options = new()
+            {
+                ModelId = ModelDefinitions.MistralSmall,
+                MaxOutputTokens = 512,
+                ToolMode = ChatToolMode.Auto,
+                Tools = [AIFunctionFactory.Create((string personName) => personName switch {
+                    "Alice" => "25",
+                    _ => "40"
+                }, "GetPersonAge", "Gets the age of the person whose name is specified.")]
+            };
+
+            var res = await client.CompleteAsync("How old is Alice?", options);
+
+            Assert.IsTrue(
+                res.Message.Text?.Contains("25") is true,
+                res.Message.Text);
+        }
+
+        [TestMethod]
+        public async Task TestStreamingFunctionCalls()
+        {
+            IChatClient client = new MistralClient().Completions
+                .AsBuilder()
+                .UseFunctionInvocation()
+                .Build();
+
+            ChatOptions options = new()
+            {
+                ModelId = ModelDefinitions.MistralSmall,
+                MaxOutputTokens = 512,
+                ToolMode = ChatToolMode.Auto,
+                Tools = [AIFunctionFactory.Create((string personName) => personName switch {
+                    "Alice" => "25",
+                    _ => "40"
+                }, "GetPersonAge", "Gets the age of the person whose name is specified.")]
+            };
+
+            StringBuilder sb = new();
+            await foreach (var update in client.CompleteStreamingAsync("How old is Alice?", options))
+            {
+                sb.Append(update);
+            }
+
+            Assert.IsTrue(
+                sb.ToString().Contains("25") is true,
+                sb.ToString());
+        }
     }
 }

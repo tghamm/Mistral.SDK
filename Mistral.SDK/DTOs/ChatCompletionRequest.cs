@@ -2,10 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Text.Json.Serialization;
+using Mistral.SDK.Extensions;
 
 namespace Mistral.SDK.DTOs
 {
+    [JsonConverter(typeof(ChatCompletionRequestConverter))]
     public class ChatCompletionRequest
     {
         /// <summary>
@@ -110,10 +113,20 @@ namespace Mistral.SDK.DTOs
         /// 
         /// </summary>
         [JsonPropertyName("response_format")]
-        public ResponseFormat ResponseFormat { get; set; }  
+        public ResponseFormat ResponseFormat { get; set; }
 
+        
+        [JsonPropertyName("tool_choice")]
+        [JsonConverter(typeof(ToolChoiceTypeConverter))]
+        public ToolChoiceType ToolChoice { get; set; } = ToolChoiceType.none;
 
-		IEnumerable<ValidationResult> Validate()
+        [JsonIgnore]
+        public IList<Common.Tool> Tools { get; set; }
+
+        [JsonPropertyName("tools")]
+        private List<Common.Tool> ToolsForMistral => Tools?.ToList();
+
+        IEnumerable<ValidationResult> Validate()
         {
             // Temperature (decimal?) maximum
             if (this.Temperature > (decimal?)1)

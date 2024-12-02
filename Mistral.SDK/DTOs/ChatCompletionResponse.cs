@@ -45,5 +45,8 @@ namespace Mistral.SDK.DTOs
         /// </summary>
         [JsonPropertyName("usage")]
         public Usage Usage { get; set; }
+
+        [JsonIgnore]
+        public List<Common.Function> ToolCalls { get; set; } = new List<Common.Function>();
     }
 }

@@ -94,7 +94,7 @@ namespace Mistral.SDK
 #endif
 
             var res = await JsonSerializer.DeserializeAsync<ChatCompletionResponse>(
-                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), cancellationToken: cancellationToken)
                 .ConfigureAwait(false); 
 
             return res;
@@ -117,8 +117,7 @@ namespace Mistral.SDK
                 }
                 else
                 {
-                    string jsonContent = JsonSerializer.Serialize(postData, MistalSdkJsonOption.Options ??
-                        new JsonSerializerOptions() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
+                    string jsonContent = JsonSerializer.Serialize(postData, new JsonSerializerOptions() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
                     var stringContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                     req.Content = stringContent;
                 }
@@ -201,14 +200,14 @@ namespace Mistral.SDK
                     else if (currentEvent.EventType == null)
                     {
                         var res = await JsonSerializer.DeserializeAsync<ChatCompletionResponse>(
-                            new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                            new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)), cancellationToken: cancellationToken)
                             .ConfigureAwait(false);
                         yield return res;
                     }
                     else if (currentEvent.EventType != null)
                     {
                         var res = await JsonSerializer.DeserializeAsync<ErrorResponse>(
-                            new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                            new MemoryStream(Encoding.UTF8.GetBytes(currentEvent.Data)), cancellationToken: cancellationToken)
                             .ConfigureAwait(false);
                         throw new Exception(res.Error.Message);
                     }

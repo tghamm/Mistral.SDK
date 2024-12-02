@@ -35,7 +35,7 @@ namespace Mistral.SDK.Models
 #endif
 
             var res = await JsonSerializer.DeserializeAsync<ModelList>(
-                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), MistalSdkJsonOption.Options, cancellationToken: cancellationToken)
+                new MemoryStream(Encoding.UTF8.GetBytes(resultAsString)), cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
             return res;
