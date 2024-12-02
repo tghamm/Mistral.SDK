@@ -206,10 +206,11 @@ namespace Mistral.SDK.Tests
             var client = new MistralClient();
             var messages = new List<ChatMessage>()
             {
-                new ChatMessage(ChatMessage.RoleEnum.User, "What is the current weather in San Francisco?")
+                new ChatMessage(ChatMessage.RoleEnum.User, "What is the weather in San Francisco, CA in Fahrenheit?")
             };
             var request = new ChatCompletionRequest("mistral-large-latest", messages);
-
+            request.MaxTokens = 1024;
+            request.Temperature = 0.0m;
             request.ToolChoice = ToolChoiceType.Auto;
 
             request.Tools = Common.Tool.GetAllAvailableTools(includeDefaults: false, forceUpdate: true, clearCache: true).ToList();
@@ -223,7 +224,8 @@ namespace Mistral.SDK.Tests
                 var resp = await toolCall.InvokeAsync<string>();
                 messages.Add(new ChatMessage(toolCall, resp));
             }
-
+            //request.ToolChoice = ToolChoiceType.none;
+            //request.Tools = null;
             var finalResult = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
             Assert.IsTrue(finalResult.Choices.First().Message.Content.Contains("72"));
@@ -305,19 +307,19 @@ namespace Mistral.SDK.Tests
             var client = new MistralClient();
             var messages = new List<ChatMessage>()
             {
-                new ChatMessage(ChatMessage.RoleEnum.User,"Should I roll the dice? Your answer should contain the word yes or no.")
+                new ChatMessage(ChatMessage.RoleEnum.User,"Should I wear a hat? It's warm outside.")
             };
             var request = new ChatCompletionRequest("mistral-large-latest", messages);
 
-            request.ToolChoice = ToolChoiceType.Auto;
+            request.ToolChoice = ToolChoiceType.Any;
 
             request.Tools = new List<Common.Tool>
             {
-                Common.Tool.FromFunc("Dice_Roller",
-                    ([FunctionParameter("Decides whether to roll the dice", true)]bool rollDice)=>
+                Common.Tool.FromFunc("Hat_Determiner",
+                    ([FunctionParameter("Is it cold outside", true)]bool isItCold)=>
                     {
                         return "no";
-                    }, "Decides whether the user should roll the dice")
+                    }, "Determines whether you should wear a heat based on whether it's cold outside.")
             };
 
             var response = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
@@ -329,10 +331,10 @@ namespace Mistral.SDK.Tests
                 var resp = toolCall.Invoke<string>();
                 messages.Add(new ChatMessage(toolCall, resp));
             }
-
+            request.ToolChoice = ToolChoiceType.none;
             var finalResult = await client.Completions.GetCompletionAsync(request).ConfigureAwait(false);
 
-            Assert.IsTrue(finalResult.Choices.First().Message.Content.Contains("no"));
+            Assert.IsTrue(finalResult.Choices.First().Message.Content.Contains("warm"));
         }
 
 

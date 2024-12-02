@@ -123,7 +123,7 @@ namespace Mistral.SDK.Extensions
 
                 foreach (var value in Enum.GetValues(type))
                 {
-                    schema["enum"].AsArray().Add(JsonNode.Parse(JsonSerializer.Serialize(value, MistralSdkJsonOption.Options)));
+                    schema["enum"].AsArray().Add(JsonNode.Parse(JsonSerializer.Serialize(value)));
                 }
             }
             else if (type.IsArray || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)))
@@ -190,7 +190,7 @@ namespace Mistral.SDK.Extensions
 
                         if (functionPropertyAttribute.DefaultValue != null)
                         {
-                            defaultValue = JsonNode.Parse(JsonSerializer.Serialize(functionPropertyAttribute.DefaultValue, MistralSdkJsonOption.Options));
+                            defaultValue = JsonNode.Parse(JsonSerializer.Serialize(functionPropertyAttribute.DefaultValue));
                             propertyInfo["default"] = defaultValue;
                         }
 
@@ -200,7 +200,7 @@ namespace Mistral.SDK.Extensions
 
                             foreach (var value in functionPropertyAttribute.PossibleValues)
                             {
-                                var @enum = JsonNode.Parse(JsonSerializer.Serialize(value, MistralSdkJsonOption.Options));
+                                var @enum = JsonNode.Parse(JsonSerializer.Serialize(value));
 
                                 if (defaultValue == null)
                                 {
@@ -217,7 +217,7 @@ namespace Mistral.SDK.Extensions
 
                             if (defaultValue != null && !enums.Contains(defaultValue))
                             {
-                                enums.Add(JsonNode.Parse(defaultValue.ToJsonString(MistralSdkJsonOption.Options)));
+                                enums.Add(JsonNode.Parse(defaultValue.ToJsonString()));
                             }
 
                             propertyInfo["enum"] = enums;
