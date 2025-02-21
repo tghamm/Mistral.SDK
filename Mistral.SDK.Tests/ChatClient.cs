@@ -13,7 +13,7 @@ namespace Mistral.SDK.Tests
         {
             IChatClient client = new MistralClient().Completions;
 
-            var response = await client.CompleteAsync(new List<ChatMessage>()
+            var response = await client.GetResponseAsync(new List<ChatMessage>()
             {
                 new(ChatRole.System, "You are an expert at writing sonnets."),
                 new(ChatRole.User, "Write me a sonnet about the Statue of Liberty.")
@@ -32,7 +32,7 @@ namespace Mistral.SDK.Tests
         {
             IChatClient client = new MistralClient().Completions;
 
-            var response = await client.CompleteAsync(new List<ChatMessage>()
+            var response = await client.GetResponseAsync(new List<ChatMessage>()
             {
                 new(ChatRole.System, "You are an expert at writing Json."),
                 new(ChatRole.User, "Write me a simple 'hello world' statement in a json object with a single 'result' key.")
@@ -50,7 +50,7 @@ namespace Mistral.SDK.Tests
             IChatClient client = new MistralClient().Completions;
 
             var sb = new StringBuilder();
-            await foreach (var update in client.CompleteStreamingAsync(new List<ChatMessage>()
+            await foreach (var update in client.GetStreamingResponseAsync(new List<ChatMessage>()
                 {
                     new(ChatRole.System, "You are an expert at writing Json."),
                     new(ChatRole.User, "Write me a simple 'hello world' statement in a json object with a single 'result' key.")
@@ -68,7 +68,7 @@ namespace Mistral.SDK.Tests
         {
             IChatClient client = new MistralClient().Completions;
 
-            var response = await client.CompleteAsync(new List<ChatMessage>()
+            var response = await client.GetResponseAsync(new List<ChatMessage>()
             {
                 new(ChatRole.System, "You are an expert at writing sonnets."),
                 new(ChatRole.User, "Write me a sonnet about the Statue of Liberty.")
@@ -106,7 +106,7 @@ namespace Mistral.SDK.Tests
                 }, "GetPersonAge", "Gets the age of the person whose name is specified.")]
             };
 
-            var res = await client.CompleteAsync("How old is Alice?", options);
+            var res = await client.GetResponseAsync("How old is Alice?", options);
 
             Assert.IsTrue(
                 res.Message.Text?.Contains("25") is true,
@@ -133,7 +133,7 @@ namespace Mistral.SDK.Tests
             };
 
             StringBuilder sb = new();
-            await foreach (var update in client.CompleteStreamingAsync("How old is Alice?", options))
+            await foreach (var update in client.GetStreamingResponseAsync("How old is Alice?", options))
             {
                 sb.Append(update);
             }

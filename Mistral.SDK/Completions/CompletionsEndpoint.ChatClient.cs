@@ -15,18 +15,17 @@ namespace Mistral.SDK.Completions
 {
     public partial class CompletionsEndpoint : IChatClient
     {
-
-        async Task<ChatCompletion> IChatClient.CompleteAsync(
+        async Task<ChatResponse> IChatClient.GetResponseAsync(
             IList<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options, CancellationToken cancellationToken)
         {
             var response = await GetCompletionAsync(CreateRequest(chatMessages, options), cancellationToken).ConfigureAwait(false);
 
             Microsoft.Extensions.AI.ChatMessage message = new(ChatRole.Assistant, ProcessResponseContent(response));
 
-            var completion = new ChatCompletion(message)
+            var completion = new ChatResponse(message)
             {
-                CompletionId = response.Id,
-                ModelId = response.Model
+                ModelId = response.Model,
+                ResponseId = response.Id,
             };
 
             if (response.Usage is { } usage)
@@ -42,18 +41,18 @@ namespace Mistral.SDK.Completions
             return completion;
         }
 
-        async IAsyncEnumerable<StreamingChatCompletionUpdate> IChatClient.CompleteStreamingAsync(
+        async IAsyncEnumerable<ChatResponseUpdate> IChatClient.GetStreamingResponseAsync(
             IList<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             await foreach (var response in StreamCompletionAsync(CreateRequest(chatMessages, options), cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 foreach (var choice in response.Choices)
                 {
-                    var update = new StreamingChatCompletionUpdate {
+                    var update = new ChatResponseUpdate {
                         ChoiceIndex = choice.Index,
-                        CompletionId = response.Id,
                         ModelId = response.Model,
                         RawRepresentation = response,
+                        ResponseId = response.Id,
                         Role = choice.Delta?.Role switch
                         {
                             DTOs.ChatMessage.RoleEnum.System => ChatRole.System,
@@ -97,9 +96,8 @@ namespace Mistral.SDK.Completions
 
                 if (response.Usage is { } usage)
                 {
-                    yield return new StreamingChatCompletionUpdate()
+                    yield return new ChatResponseUpdate()
                     {
-                        CompletionId = response.Id,
                         ModelId = response.Model,
                         Contents = new List<AIContent>()
                         {
@@ -110,6 +108,7 @@ namespace Mistral.SDK.Completions
                                 TotalTokenCount = usage.TotalTokens
                             })
                         },
+                        ResponseId = response.Id,
                     };
                 }
             }
@@ -130,7 +129,7 @@ namespace Mistral.SDK.Completions
                     switch (content)
                     {
                         case Microsoft.Extensions.AI.FunctionResultContent frc:
-                            return new DTOs.ChatMessage(frc.CallId, frc.Name, frc.Result?.ToString());
+                            return new DTOs.ChatMessage(frc.CallId, frc.CallId, frc.Result?.ToString());
                         case Microsoft.Extensions.AI.FunctionCallContent fcc:
                             return new DTOs.ChatMessage()
                             {
@@ -170,20 +169,26 @@ namespace Mistral.SDK.Completions
 
             if (options.Tools is { Count: > 0 })
             {
-                
                 if (options.ToolMode is RequiredChatToolMode r)
                 {
                     request.ToolChoice = ToolChoiceType.Any;
                 }
-                else if (options.ToolMode is AutoChatToolMode a)
+                else if (options.ToolMode is AutoChatToolMode or null)
                 {
                     request.ToolChoice = ToolChoiceType.Auto;
+                }
+                else if (options.ToolMode is NoneChatToolMode)
+                {
+                    request.ToolChoice = ToolChoiceType.none;
                 }
 
                 request.Tools = options
                     .Tools
                     .OfType<AIFunction>()
-                    .Select(f => new Common.Tool(new Common.Function(f.Metadata.Name, f.Metadata.Description, FunctionParameters.CreateSchema(f))))
+                    .Select(f => new Common.Tool(new Common.Function(
+                        f.Name,
+                        f.Description,
+                        JsonSerializer.SerializeToNode(JsonSerializer.Deserialize<FunctionParameters>(f.JsonSchema)))))
                     .ToList();
             }
 
@@ -225,18 +230,16 @@ namespace Mistral.SDK.Completions
 
         void IDisposable.Dispose() { }
 
-        object IChatClient.GetService(Type serviceType, object key) =>
-            key is null && serviceType?.IsInstanceOfType(this) is true ? this : null;
-
-        ChatClientMetadata IChatClient.Metadata => _metadata ??= new ChatClientMetadata(nameof(MistralClient), new Uri(Url));
+        object IChatClient.GetService(Type serviceType, object serviceKey) =>
+            serviceKey is not null ? null :
+            serviceType == typeof(ChatClientMetadata) ? (_metadata ??= new ChatClientMetadata(nameof(MistralClient), new Uri(Url))) :
+            serviceType?.IsInstanceOfType(this) is true ? this : 
+            null;
 
         private ChatClientMetadata _metadata;
 
-
         private sealed class FunctionParameters
         {
-            private static readonly JsonElement s_defaultParameterSchema = JsonDocument.Parse("{}").RootElement;
-
             [JsonPropertyName("type")]
             public string Type { get; set; } = "object";
 
@@ -245,25 +248,6 @@ namespace Mistral.SDK.Completions
 
             [JsonPropertyName("properties")]
             public Dictionary<string, JsonElement> Properties { get; set; } = [];
-
-            public static JsonNode CreateSchema(AIFunction f)
-            {
-                var parameters = f.Metadata.Parameters;
-
-                FunctionParameters schema = new();
-
-                foreach (AIFunctionParameterMetadata parameter in parameters)
-                {
-                    schema.Properties.Add(parameter.Name, parameter.Schema is JsonElement e ? e : s_defaultParameterSchema);
-
-                    if (parameter.IsRequired)
-                    {
-                        schema.Required.Add(parameter.Name);
-                    }
-                }
-
-                return JsonSerializer.SerializeToNode(schema);
-            }
         }
     }
 

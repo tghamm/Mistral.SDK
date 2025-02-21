@@ -77,13 +77,13 @@ namespace Mistral.SDK.Embeddings
             return embeddings;
         }
 
-        object IEmbeddingGenerator<string, Embedding<float>>.GetService(Type serviceType, object key) =>
-            key is null && serviceType?.IsInstanceOfType(this) is true ? this : null;
+        object IEmbeddingGenerator<string, Embedding<float>>.GetService(Type serviceType, object serviceKey) =>
+            serviceKey is not null ? null :
+            serviceType == typeof(EmbeddingGeneratorMetadata) ? (_metadata ??= new EmbeddingGeneratorMetadata(nameof(MistralClient), new Uri(Url))) :
+            serviceType?.IsInstanceOfType(this) is true ? this :
+            null;
 
         void IDisposable.Dispose() { }
-
-        EmbeddingGeneratorMetadata IEmbeddingGenerator<string, Embedding<float>>.Metadata =>
-            _metadata ??= new EmbeddingGeneratorMetadata(nameof(MistralClient), new Uri(Url));
 
         private EmbeddingGeneratorMetadata _metadata;
     }
