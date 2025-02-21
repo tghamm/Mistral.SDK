@@ -140,7 +140,7 @@ The `MistralClient` has support for the new `IChatClient` from Microsoft and off
 //non-streaming
 IChatClient client = new MistralClient().Completions;
 
-var response = await client.CompleteAsync(new List<ChatMessage>()
+var response = await client.GetResponseAsync(new List<ChatMessage>()
 {
     new(ChatRole.System, "You are an expert at writing sonnets."),
     new(ChatRole.User, "Write me a sonnet about the Statue of Liberty.")
@@ -152,7 +152,7 @@ Assert.IsTrue(!string.IsNullOrEmpty(response.Message.Text));
 IChatClient client = new MistralClient().Completions;
 
 var sb = new StringBuilder();
-await foreach (var update in client.CompleteStreamingAsync(new List<ChatMessage>()
+await foreach (var update in client.GetStreamingResponseAsync(new List<ChatMessage>()
     {
         new(ChatRole.System, "You are an expert at writing Json."),
         new(ChatRole.User, "Write me a simple 'hello world' statement in a json object with a single 'result' key.")
@@ -165,7 +165,7 @@ await foreach (var update in client.CompleteStreamingAsync(new List<ChatMessage>
 Assert.IsNotNull(JsonSerializer.Deserialize<JsonResult>(sb.ToString()));
 
 //Embeddings call
-EmbeddingGenerator<string, Embedding<float>> client = new MistralClient().Embeddings;
+IEmbeddingGenerator<string, Embedding<float>> = new MistralClient().Embeddings;
             var response = await client.GenerateEmbeddingVectorAsync("hello world", new() { ModelId = ModelDefinitions.MistralEmbed });
             Assert.IsTrue(!response.IsEmpty);
 
@@ -186,7 +186,7 @@ ChatOptions options = new()
     }, "GetPersonAge", "Gets the age of the person whose name is specified.")]
 };
 
-var res = await client.CompleteAsync("How old is Alice?", options);
+var res = await client.GetResponseAsync("How old is Alice?", options);
 
 Assert.IsTrue(
     res.Message.Text?.Contains("25") is true,
