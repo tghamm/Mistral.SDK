@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Mistral.SDK.DTOs;
+using System.Net;
 
 namespace Mistral.SDK
 {
@@ -41,6 +42,7 @@ namespace Mistral.SDK
         /// </summary>
         protected string Url => string.Format(Client.ApiUrlFormat, Client.ApiVersion, Endpoint);
 
+        internal static HttpClient client = null;
 
         /// <summary>
         /// Gets an HTTPClient with the appropriate authorization and other headers set
@@ -56,8 +58,16 @@ namespace Mistral.SDK
 
             var clientFactory = Client.HttpClientFactory;
 
-            var client = clientFactory != null ? clientFactory.CreateClient() : new HttpClient();
-
+            var client = clientFactory != null ? clientFactory.CreateClient() : new HttpClient(new HttpClientHandler
+            {
+                MaxConnectionsPerServer = 100,
+                Proxy = new WebProxy(), // Add this line to disable proxy
+                UseProxy = false, // Add this line to disable proxy
+                SslProtocols = SslProtocols.Tls12, // Add this line to specify SSL protocols
+                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true // Add this line to bypass certificate validation
+                
+            });
+            
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Client.Auth.ApiKey}");
             client.DefaultRequestHeaders.Add("User-Agent", UserAgent);
 
@@ -85,14 +95,21 @@ namespace Mistral.SDK
             if (string.IsNullOrEmpty(url))
                 url = this.Url;
 
-            using var client = GetClient();
+            client = client ?? GetClient();
 
             client.DefaultRequestHeaders
                 .Accept
                 .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            
+            client.DefaultRequestHeaders.ConnectionClose = true;
+
+            
+
             HttpResponseMessage response = null;
             string resultAsString = null;
             HttpRequestMessage req = new HttpRequestMessage(verb, url);
+            req.Headers.ConnectionClose = true;
+            
 
             if (postData != null)
             {
