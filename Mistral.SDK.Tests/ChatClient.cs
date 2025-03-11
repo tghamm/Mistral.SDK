@@ -19,7 +19,7 @@ namespace Mistral.SDK.Tests
                 new(ChatRole.User, "Write me a sonnet about the Statue of Liberty.")
             }, new() { ModelId = ModelDefinitions.OpenMistral7b }).ConfigureAwait(false);
 
-            Assert.IsTrue(!string.IsNullOrEmpty(response.Message.Text));
+            Assert.IsTrue(!string.IsNullOrEmpty(response.Text));
         }
 
         public class JsonResult
@@ -38,10 +38,10 @@ namespace Mistral.SDK.Tests
                 new(ChatRole.User, "Write me a simple 'hello world' statement in a json object with a single 'result' key.")
             }, new() { ModelId = ModelDefinitions.MistralLarge, ResponseFormat = ChatResponseFormat.Json }).ConfigureAwait(false);
 
-            Assert.IsTrue(!string.IsNullOrEmpty(response.Message.Text));
+            Assert.IsTrue(!string.IsNullOrEmpty(response.Text));
 
             //parse json
-            Assert.IsNotNull(JsonSerializer.Deserialize<JsonResult>(response.Message.Text));
+            Assert.IsNotNull(JsonSerializer.Deserialize<JsonResult>(response.Text));
         }
 
         [TestMethod]
@@ -84,7 +84,7 @@ namespace Mistral.SDK.Tests
                 },
             }).ConfigureAwait(false);
 
-            Assert.IsTrue(!string.IsNullOrEmpty(response.Message.Text));
+            Assert.IsTrue(!string.IsNullOrEmpty(response.Text));
         }
 
         [TestMethod]
@@ -109,8 +109,8 @@ namespace Mistral.SDK.Tests
             var res = await client.GetResponseAsync("How old is Alice?", options);
 
             Assert.IsTrue(
-                res.Message.Text?.Contains("25") is true,
-                res.Message.Text);
+                res.Text.Contains("25") is true,
+                res.Text);
         }
 
         [TestMethod]
