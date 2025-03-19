@@ -77,7 +77,7 @@ namespace Mistral.SDK.Embeddings
             return embeddings;
         }
 
-        object IEmbeddingGenerator<string, Embedding<float>>.GetService(Type serviceType, object serviceKey) =>
+        object IEmbeddingGenerator.GetService(Type serviceType, object serviceKey) =>
             serviceKey is not null ? null :
             serviceType == typeof(EmbeddingGeneratorMetadata) ? (_metadata ??= new EmbeddingGeneratorMetadata(nameof(MistralClient), new Uri(Url))) :
             serviceType?.IsInstanceOfType(this) is true ? this :

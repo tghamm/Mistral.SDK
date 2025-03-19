@@ -16,9 +16,9 @@ namespace Mistral.SDK.Completions
     public partial class CompletionsEndpoint : IChatClient
     {
         async Task<ChatResponse> IChatClient.GetResponseAsync(
-            IList<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options, CancellationToken cancellationToken)
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions options, CancellationToken cancellationToken)
         {
-            var response = await GetCompletionAsync(CreateRequest(chatMessages, options), cancellationToken).ConfigureAwait(false);
+            var response = await GetCompletionAsync(CreateRequest(messages, options), cancellationToken).ConfigureAwait(false);
 
             Microsoft.Extensions.AI.ChatMessage message = new(ChatRole.Assistant, ProcessResponseContent(response));
 
@@ -42,40 +42,36 @@ namespace Mistral.SDK.Completions
         }
 
         async IAsyncEnumerable<ChatResponseUpdate> IChatClient.GetStreamingResponseAsync(
-            IList<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await foreach (var response in StreamCompletionAsync(CreateRequest(chatMessages, options), cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+            await foreach (var response in StreamCompletionAsync(CreateRequest(messages, options), cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 foreach (var choice in response.Choices)
                 {
-                    var update = new ChatResponseUpdate {
-                        ChoiceIndex = choice.Index,
+                    ChatRole role = choice.Delta?.Role switch
+                    {
+                        DTOs.ChatMessage.RoleEnum.System => ChatRole.System,
+                        DTOs.ChatMessage.RoleEnum.Assistant => ChatRole.User,
+                        _ => ChatRole.User,
+                    };
+
+                    ChatFinishReason? finishReason = choice.FinishReason switch
+                    {
+                        Choice.FinishReasonEnum.Length => ChatFinishReason.Length,
+                        Choice.FinishReasonEnum.ModelLength => ChatFinishReason.Length,
+                        _ => ChatFinishReason.Stop
+                    };
+
+                    var update = new ChatResponseUpdate(role, choice.Delta?.Content)
+                    {
                         ModelId = response.Model,
                         RawRepresentation = response,
                         ResponseId = response.Id,
-                        Role = choice.Delta?.Role switch
-                        {
-                            DTOs.ChatMessage.RoleEnum.System => ChatRole.System,
-                            DTOs.ChatMessage.RoleEnum.Assistant => ChatRole.User,
-                            _ => ChatRole.User,
-                        },
-                        FinishReason = choice.FinishReason switch
-                        {
-                            Choice.FinishReasonEnum.Length => ChatFinishReason.Length,
-                            Choice.FinishReasonEnum.ModelLength => ChatFinishReason.Length,
-                            _ => ChatFinishReason.Stop
-                        },
-                        Text = choice.Delta?.Content,
-                        
+                        FinishReason = finishReason,
                     };
 
                     if (choice.Delta?.ToolCalls is { Count: > 0 })
                     {
-                        update.Contents = new List<AIContent>
-                        {
-                            new TextContent(choice.Delta.Content)
-                        };
-
                         foreach (var toolCall in choice.Delta.ToolCalls)
                         {
                             Dictionary<string, object> arguments = null;
@@ -114,7 +110,7 @@ namespace Mistral.SDK.Completions
             }
         }
 
-        private static ChatCompletionRequest CreateRequest(IList<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options)
+        private static ChatCompletionRequest CreateRequest(IEnumerable<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options)
         {
             var messages = chatMessages.Select(m =>
             {
@@ -150,7 +146,7 @@ namespace Mistral.SDK.Completions
                     }
                 }
 
-                return new DTOs.ChatMessage(role, string.Concat(m.Contents.OfType<TextContent>()));
+                return new DTOs.ChatMessage(role, m.Text);
             }).ToList();
 
             var request = new ChatCompletionRequest(
