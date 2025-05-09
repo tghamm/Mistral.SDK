@@ -26,6 +26,7 @@ namespace Mistral.SDK.Completions
             {
                 ModelId = response.Model,
                 ResponseId = response.Id,
+                RawRepresentation = response
             };
 
             if (response.Usage is { } usage)
@@ -155,6 +156,7 @@ namespace Mistral.SDK.Completions
                 temperature: (decimal?)options?.Temperature,
                 topP: (decimal?)options?.TopP,
                 maxTokens: options?.MaxOutputTokens,
+                parallelToolCalls: options?.AllowMultipleToolCalls ?? true,
                 safePrompt: options?.AdditionalProperties?.TryGetValue(nameof(ChatCompletionRequest.SafePrompt), out bool safePrompt) is true,
                 randomSeed: (int?)options?.Seed);
 
