@@ -20,13 +20,16 @@ namespace Mistral.SDK.Completions
         {
             var response = await GetCompletionAsync(CreateRequest(messages, options), cancellationToken).ConfigureAwait(false);
 
-            Microsoft.Extensions.AI.ChatMessage message = new(ChatRole.Assistant, ProcessResponseContent(response));
+            Microsoft.Extensions.AI.ChatMessage message = new(ChatRole.Assistant, ProcessResponseContent(response))
+            {
+                MessageId = Guid.NewGuid().ToString("N")
+            };
 
             var completion = new ChatResponse(message)
             {
                 ModelId = response.Model,
                 ResponseId = response.Id,
-                RawRepresentation = response
+                RawRepresentation = response,
             };
 
             if (response.Usage is { } usage)
@@ -65,6 +68,7 @@ namespace Mistral.SDK.Completions
 
                     var update = new ChatResponseUpdate(role, choice.Delta?.Content)
                     {
+                        MessageId = response.Id,
                         ModelId = response.Model,
                         RawRepresentation = response,
                         ResponseId = response.Id,
@@ -95,7 +99,6 @@ namespace Mistral.SDK.Completions
                 {
                     yield return new ChatResponseUpdate()
                     {
-                        ModelId = response.Model,
                         Contents = new List<AIContent>()
                         {
                             new UsageContent(new UsageDetails()
@@ -105,15 +108,20 @@ namespace Mistral.SDK.Completions
                                 TotalTokenCount = usage.TotalTokens
                             })
                         },
+                        MessageId = response.Id,
+                        ModelId = response.Model,
                         ResponseId = response.Id,
                     };
                 }
             }
         }
 
-        private static ChatCompletionRequest CreateRequest(IEnumerable<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options)
+        private ChatCompletionRequest CreateRequest(IEnumerable<Microsoft.Extensions.AI.ChatMessage> chatMessages, ChatOptions options)
         {
-            var messages = chatMessages.Select(m =>
+            ChatCompletionRequest request = options?.RawRepresentationFactory?.Invoke(this) as ChatCompletionRequest ?? new();
+
+            request.Messages ??= [];
+            request.Messages.AddRange(chatMessages.Select(m =>
             {
                 DTOs.ChatMessage.RoleEnum role =
                     m.Role == ChatRole.System ? DTOs.ChatMessage.RoleEnum.System :
@@ -148,25 +156,45 @@ namespace Mistral.SDK.Completions
                 }
 
                 return new DTOs.ChatMessage(role, m.Text);
-            }).ToList();
+            }));
 
-            var request = new ChatCompletionRequest(
-                model: options?.ModelId,
-                messages: messages,
-                temperature: (decimal?)options?.Temperature,
-                topP: (decimal?)options?.TopP,
-                maxTokens: options?.MaxOutputTokens,
-                parallelToolCalls: options?.AllowMultipleToolCalls ?? true,
-                safePrompt: options?.AdditionalProperties?.TryGetValue(nameof(ChatCompletionRequest.SafePrompt), out bool safePrompt) is true,
-                randomSeed: (int?)options?.Seed);
+            request.Model ??= options?.ModelId;
+            request.Temperature ??= (decimal?)options?.Temperature;
+            request.TopP ??= (decimal?)options?.TopP;
+            request.MaxTokens ??= options?.MaxOutputTokens;
+            request.ParallelToolCalls = options.AllowMultipleToolCalls ?? request.ParallelToolCalls;
+            request.RandomSeed ??= (int?)options?.Seed;
 
             if (options.ResponseFormat is ChatResponseFormatJson)
             {
-                request.ResponseFormat = new ResponseFormat() { Type = ResponseFormat.ResponseFormatEnum.JSON };
+                request.ResponseFormat ??= new ResponseFormat() { Type = ResponseFormat.ResponseFormatEnum.JSON };
             }
 
-            if (options.Tools is { Count: > 0 })
+            List<Common.Tool> tools = null;
+            if (options.Tools is not null)
             {
+                tools = options
+                    .Tools
+                    .OfType<AIFunction>()
+                    .Select(f => new Common.Tool(new Common.Function(
+                        f.Name,
+                        f.Description,
+                        JsonSerializer.SerializeToNode(JsonSerializer.Deserialize<FunctionParameters>(f.JsonSchema)))))
+                    .ToList();
+            }
+
+            if (tools is { Count: > 0 })
+            {
+                if (request.Tools is null)
+                {
+                    request.Tools = tools;
+                }
+                else
+                {
+                    tools.AddRange(request.Tools);
+                    request.Tools = tools;
+                }
+
                 if (options.ToolMode is RequiredChatToolMode r)
                 {
                     request.ToolChoice = ToolChoiceType.Any;
@@ -179,15 +207,6 @@ namespace Mistral.SDK.Completions
                 {
                     request.ToolChoice = ToolChoiceType.none;
                 }
-
-                request.Tools = options
-                    .Tools
-                    .OfType<AIFunction>()
-                    .Select(f => new Common.Tool(new Common.Function(
-                        f.Name,
-                        f.Description,
-                        JsonSerializer.SerializeToNode(JsonSerializer.Deserialize<FunctionParameters>(f.JsonSchema)))))
-                    .ToList();
             }
 
             return request;

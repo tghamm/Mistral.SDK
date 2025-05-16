@@ -9,7 +9,7 @@ namespace Mistral.SDK.Tests
         public async Task TestMistralEmbeddingsGenerator()
         {
             IEmbeddingGenerator<string, Embedding<float>> client = new MistralClient().Embeddings;
-            var response = await client.GenerateEmbeddingVectorAsync("hello world", new() { ModelId = ModelDefinitions.MistralEmbed }).ConfigureAwait(false);
+            var response = await client.GenerateVectorAsync("hello world", new() { ModelId = ModelDefinitions.MistralEmbed }).ConfigureAwait(false);
             Assert.IsTrue(!response.IsEmpty);
         }
     }
