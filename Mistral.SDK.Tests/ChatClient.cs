@@ -78,9 +78,9 @@ namespace Mistral.SDK.Tests
                 Temperature = 0,
                 MaxOutputTokens = 500,
                 Seed = 32,
-                AdditionalProperties = new AdditionalPropertiesDictionary
+                RawRepresentationFactory = static _ => new DTOs.ChatCompletionRequest()
                 {
-                    ["SafePrompt"] = true,
+                    SafePrompt = true,
                 },
             }).ConfigureAwait(false);
 
