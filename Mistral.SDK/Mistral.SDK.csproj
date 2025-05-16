@@ -14,12 +14,12 @@
 	<PackageTags>Mistral, AI, ML, API, C#, .NET, Mixtral</PackageTags>
 	<Title>Mistral API</Title>
 	<PackageReleaseNotes>
-		Updates to Microsoft.Extensions.AI.Abstractions
+		Updates Microsoft.Extensions.AI.Abstractions to Stable 9.5.0
 	</PackageReleaseNotes>
 	<PackageId>Mistral.SDK</PackageId>
-	<Version>2.1.3</Version>
-	<AssemblyVersion>2.1.3.0</AssemblyVersion>
-	<FileVersion>2.1.3.0</FileVersion>
+	<Version>2.2.0</Version>
+	<AssemblyVersion>2.2.0.0</AssemblyVersion>
+	<FileVersion>2.2.0.0</FileVersion>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<ProduceReferenceAssembly>True</ProduceReferenceAssembly>

@@ -166,7 +166,7 @@ Assert.IsNotNull(JsonSerializer.Deserialize<JsonResult>(sb.ToString()));
 
 //Embeddings call
 IEmbeddingGenerator<string, Embedding<float>> = new MistralClient().Embeddings;
-            var response = await client.GenerateEmbeddingVectorAsync("hello world", new() { ModelId = ModelDefinitions.MistralEmbed });
+            var response = await client.GenerateVectorAsync("hello world", new() { ModelId = ModelDefinitions.MistralEmbed });
             Assert.IsTrue(!response.IsEmpty);
 
 //Functions call
