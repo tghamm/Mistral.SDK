@@ -26,17 +26,7 @@ namespace Mistral.SDK.DTOs
         /// <param name="responseFormat">The response format needed If set, the API will be forced to return the data in this mode</param>
         public ChatCompletionRequest(string model = default(string), List<ChatMessage> messages = default(List<ChatMessage>), decimal? temperature = 0.7M, decimal? topP = 1M, int? maxTokens = default(int?), bool? stream = false, bool parallelToolCalls = true, bool safePrompt = false, int? randomSeed = default(int?), ResponseFormat responseFormat = default)
         {
-            // to ensure "model" is required (not null)
-            if (model == null)
-            {
-                throw new ArgumentNullException("model is a required property for ChatCompletionRequest and cannot be null");
-            }
             this.Model = model;
-            // to ensure "messages" is required (not null)
-            if (messages == null)
-            {
-                throw new ArgumentNullException("messages is a required property for ChatCompletionRequest and cannot be null");
-            }
             this.Messages = messages;
             // use default value if no "temperature" provided
             this.Temperature = temperature ?? 0.7M;
