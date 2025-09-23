@@ -158,6 +158,11 @@ namespace Mistral.SDK.Completions
                 return new DTOs.ChatMessage(role, m.Text);
             }));
 
+            if (options?.Instructions is { } instructions)
+            {
+                request.Messages.Add(new DTOs.ChatMessage(DTOs.ChatMessage.RoleEnum.System, instructions));
+            }
+
             request.Model ??= options?.ModelId;
             request.Temperature ??= (decimal?)options?.Temperature;
             request.TopP ??= (decimal?)options?.TopP;
@@ -175,7 +180,7 @@ namespace Mistral.SDK.Completions
             {
                 tools = options
                     .Tools
-                    .OfType<AIFunction>()
+                    .OfType<AIFunctionDeclaration>()
                     .Select(f => new Common.Tool(new Common.Function(
                         f.Name,
                         f.Description,
