@@ -1,6 +1,3 @@
-
-
-
 using System.Text.Json.Serialization;
 
 namespace Mistral.SDK.DTOs
