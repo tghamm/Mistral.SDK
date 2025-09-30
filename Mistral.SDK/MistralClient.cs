@@ -7,6 +7,7 @@ using System.Text.Json;
 using Mistral.SDK.Completions;
 using Mistral.SDK.Embeddings;
 using Mistral.SDK.Models;
+using Mistral.SDK.OCR;
 
 namespace Mistral.SDK
 {
@@ -51,6 +52,7 @@ namespace Mistral.SDK
             Completions = new CompletionsEndpoint(this);
             Models = new ModelsEndpoint(this);
             Embeddings = new EmbeddingsEndpoint(this);
+            OCR = new OCREndpoint(this);
         }
 
         internal static JsonSerializerOptions JsonSerializationOptions { get; } = new()
@@ -92,6 +94,10 @@ namespace Mistral.SDK
         /// </summary>
         public EmbeddingsEndpoint Embeddings { get; }
 
+        /// <summary>
+        /// The Mistral Document AI OCR processor API Endpoint
+        /// </summary>
+        public OCREndpoint OCR { get; }
 
         #region IDisposable
 
