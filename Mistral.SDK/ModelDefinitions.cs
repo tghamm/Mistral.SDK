@@ -12,5 +12,6 @@ namespace Mistral.SDK
         public const string MistralMedium = "mistral-medium-latest";
         public const string MistralLarge = "mistral-large-latest";
         public const string MistralEmbed = "mistral-embed";
+        public const string MistralOCR = "mistral-ocr-latest";
     }
 }
