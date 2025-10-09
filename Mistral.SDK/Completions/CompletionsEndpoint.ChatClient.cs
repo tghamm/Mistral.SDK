@@ -2,19 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.Extensions.AI;
 using Mistral.SDK.DTOs;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Mistral.SDK.Completions
 {
     public partial class CompletionsEndpoint : IChatClient
     {
+        private static readonly Regex s_validFunctionCallIdRegex = new("^[a-zA-Z0-9]{9}$");
+
         async Task<ChatResponse> IChatClient.GetResponseAsync(
             IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions options, CancellationToken cancellationToken)
         {
@@ -22,7 +23,7 @@ namespace Mistral.SDK.Completions
 
             Microsoft.Extensions.AI.ChatMessage message = new(ChatRole.Assistant, ProcessResponseContent(response))
             {
-                MessageId = Guid.NewGuid().ToString("N")
+                MessageId = response.Id ?? Guid.NewGuid().ToString("N"),
             };
 
             var completion = new ChatResponse(message)
@@ -121,62 +122,147 @@ namespace Mistral.SDK.Completions
             ChatCompletionRequest request = options?.RawRepresentationFactory?.Invoke(this) as ChatCompletionRequest ?? new();
 
             request.Messages ??= [];
-            request.Messages.AddRange(chatMessages.Select(m =>
-            {
-                DTOs.ChatMessage.RoleEnum role =
-                    m.Role == ChatRole.System ? DTOs.ChatMessage.RoleEnum.System :
-                    m.Role == ChatRole.User ? DTOs.ChatMessage.RoleEnum.User :
-                    m.Role == ChatRole.Tool ? DTOs.ChatMessage.RoleEnum.Tool :
-                    DTOs.ChatMessage.RoleEnum.Assistant;
-
-                foreach (AIContent content in m.Contents)
-                {
-                    switch (content)
-                    {
-                        case Microsoft.Extensions.AI.FunctionResultContent frc:
-                            return new DTOs.ChatMessage(frc.CallId, frc.CallId, frc.Result?.ToString());
-                        case Microsoft.Extensions.AI.FunctionCallContent fcc:
-                            return new DTOs.ChatMessage()
-                            {
-                                Role = DTOs.ChatMessage.RoleEnum.Assistant,
-                                ToolCalls = new List<ToolCall>()
-                                {
-                                    new ToolCall()
-                                    {
-                                        Id = fcc.CallId,
-                                        Function = new ToolCallParameter()
-                                        {
-                                            Arguments = JsonSerializer.SerializeToNode(fcc.Arguments),
-                                            Name = fcc.Name,
-                                        }
-                                    }
-                                }
-                            };
-                    }
-                }
-
-                return new DTOs.ChatMessage(role, m.Text);
-            }));
 
             if (options?.Instructions is { } instructions)
             {
                 request.Messages.Add(new DTOs.ChatMessage(DTOs.ChatMessage.RoleEnum.System, instructions));
             }
 
+            request.Messages.AddRange(chatMessages.SelectMany(m =>
+            {
+                return ToChatMessageDTO(m);
+                static IEnumerable<DTOs.ChatMessage> ToChatMessageDTO(Microsoft.Extensions.AI.ChatMessage m)
+                {
+                    DTOs.ChatMessage.RoleEnum role =
+                        m.Role == ChatRole.System ? DTOs.ChatMessage.RoleEnum.System :
+                        m.Role == ChatRole.Assistant ? DTOs.ChatMessage.RoleEnum.Assistant :
+                        m.Role == ChatRole.Tool ? DTOs.ChatMessage.RoleEnum.Tool :
+                        DTOs.ChatMessage.RoleEnum.User;
+
+                    foreach (AIContent content in m.Contents)
+                    {
+                        switch (content)
+                        {
+                            case Microsoft.Extensions.AI.TextContent tc:
+                                yield return new DTOs.ChatMessage(role, tc.Text);
+                                break;
+
+                            case Microsoft.Extensions.AI.FunctionCallContent fcc:
+                                yield return new DTOs.ChatMessage()
+                                {
+                                    Role = DTOs.ChatMessage.RoleEnum.Assistant,
+                                    ToolCalls = new List<ToolCall>()
+                                    {
+                                        new ToolCall()
+                                        {
+                                            Id = fcc.CallId,
+                                            Function = new ToolCallParameter()
+                                            {
+                                                Arguments = JsonSerializer.SerializeToNode(fcc.Arguments),
+                                                Name = fcc.Name,
+                                            }
+                                        }
+                                    }
+                                };
+                                break;
+
+                            case Microsoft.Extensions.AI.FunctionResultContent frc:
+                                yield return new DTOs.ChatMessage(frc.CallId, frc.CallId, frc.Result?.ToString());
+                                break;
+                        }
+                    }
+                }
+            }));
+
+            // Mistral has a bunch of requirements about the structure of messages. Try to avoid the most common issues.
+            {
+                const string EmptyMessage = "\u200b";
+
+                // There needs to be at least one user or assistant message.
+                if (request.Messages.Count == 0 ||
+                    request.Messages.All(m => m.Role is not (DTOs.ChatMessage.RoleEnum.User or DTOs.ChatMessage.RoleEnum.Assistant)))
+                {
+                    request.Messages.Add(new DTOs.ChatMessage(DTOs.ChatMessage.RoleEnum.User, EmptyMessage));
+                }
+
+                // System messages should be at the beginning and consolidated into one message.
+                string systemMessage = string.Join("\n", request.Messages.Where(m => m.Role == DTOs.ChatMessage.RoleEnum.System).Select(m => m.Content));
+                if (!string.IsNullOrWhiteSpace(systemMessage))
+                {
+                    request.Messages.RemoveAll(m => m.Role == DTOs.ChatMessage.RoleEnum.System);
+                    request.Messages.Insert(0, new(DTOs.ChatMessage.RoleEnum.System, systemMessage));
+                }
+
+                // Function call IDs must be in a very specific format, nine [a-zA-Z0-9] characters.
+                // If any aren't, remove them.
+                for (int i = 0; i < request.Messages.Count; i++)
+                {
+                    var m = request.Messages[i];
+                    if (m.ToolCallId is not null && !s_validFunctionCallIdRegex.IsMatch(m.ToolCallId))
+                    {
+                        request.Messages[i] = null;
+                    }
+                    else if (m.ToolCalls is { Count: > 0 })
+                    {
+                        m.ToolCalls.RemoveAll(static tc => !s_validFunctionCallIdRegex.IsMatch(tc.Id));
+                        if (m.ToolCalls.Count == 0)
+                        {
+                            request.Messages[i] = null;
+                        }
+                    }
+                }
+                request.Messages.RemoveAll(static m => m is null);
+
+                // User messages should be consolidated so that two user messages don't appear in a row.
+                for (int i = 0; i < request.Messages.Count - 1; i++)
+                {
+                    if (request.Messages[i].Role != DTOs.ChatMessage.RoleEnum.User)
+                    {
+                        continue;
+                    }
+
+                    int next = i + 1;
+                    while (next < request.Messages.Count && request.Messages[next].Role == DTOs.ChatMessage.RoleEnum.User) next++;
+
+                    if (i + 1 < next)
+                    {
+                        request.Messages[i].Content = string.Join("\n", request.Messages.Skip(i).Take(next - i).Select(m => m.Content));
+                        request.Messages.RemoveRange(i + 1, next - (i + 1));
+                    }
+                }
+
+                // Tool messages must be followed by an assistant message if there's anything next.
+                for (int i = 0; i < request.Messages.Count; i++)
+                {
+                    if (request.Messages[i].Role == DTOs.ChatMessage.RoleEnum.Tool &&
+                        i + 1 < request.Messages.Count &&
+                        request.Messages[i + 1].Role != DTOs.ChatMessage.RoleEnum.Assistant)
+                    {
+                        request.Messages.Insert(i + 1, new DTOs.ChatMessage(DTOs.ChatMessage.RoleEnum.Assistant, EmptyMessage));
+                    }
+                }
+
+                // The last message must not be Assistant.
+                if (request.Messages[request.Messages.Count - 1].Role == DTOs.ChatMessage.RoleEnum.Assistant)
+                {
+                    request.Messages.Add(new DTOs.ChatMessage(DTOs.ChatMessage.RoleEnum.User, EmptyMessage));
+                }
+            }
+
             request.Model ??= options?.ModelId;
             request.Temperature ??= (decimal?)options?.Temperature;
             request.TopP ??= (decimal?)options?.TopP;
             request.MaxTokens ??= options?.MaxOutputTokens;
-            request.ParallelToolCalls = options.AllowMultipleToolCalls ?? request.ParallelToolCalls;
+            request.ParallelToolCalls = options?.AllowMultipleToolCalls ?? request.ParallelToolCalls;
             request.RandomSeed ??= (int?)options?.Seed;
 
-            if (options.ResponseFormat is ChatResponseFormatJson)
+            if (options?.ResponseFormat is ChatResponseFormatJson)
             {
                 request.ResponseFormat ??= new ResponseFormat() { Type = ResponseFormat.ResponseFormatEnum.JSON };
             }
 
             List<Common.Tool> tools = null;
-            if (options.Tools is not null)
+            if (options?.Tools is not null)
             {
                 tools = options
                     .Tools
