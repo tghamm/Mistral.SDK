@@ -79,6 +79,7 @@ namespace Mistral.SDK.DTOs
         /// Gets or Sets Content
         /// </summary>
         [JsonPropertyName("content")]
+        [JsonConverter(typeof(MessageContentConverter))]
         public string Content { get; set; }
 
         [JsonPropertyName("tool_calls")]
