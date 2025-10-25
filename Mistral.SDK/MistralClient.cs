@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Mistral.SDK.Completions;
+using Mistral.SDK.Converters;
 using Mistral.SDK.Embeddings;
 using Mistral.SDK.Models;
 
@@ -53,10 +54,13 @@ namespace Mistral.SDK
             Embeddings = new EmbeddingsEndpoint(this);
         }
 
-        internal static JsonSerializerOptions JsonSerializationOptions { get; } = new()
+        /// <summary>
+        /// JSON serialization options used by the SDK, including custom converters for Mistral-specific types.
+        /// </summary>
+        public static JsonSerializerOptions JsonSerializationOptions { get; } = new()
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            Converters = { new JsonStringEnumConverter() },
+            Converters = { new JsonStringEnumConverter(), new MessageContentConverter() },
             ReferenceHandler = ReferenceHandler.IgnoreCycles,
         };
 
